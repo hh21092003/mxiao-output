@@ -67,8 +67,9 @@
     .tl{top:22px;left:22px;border-right:0;border-bottom:0}.tr{top:22px;right:22px;border-left:0;border-bottom:0}
     .bl{bottom:22px;left:22px;border-right:0;border-top:0}.br{bottom:22px;right:22px;border-left:0;border-top:0}
     .cert-inner{position:relative;z-index:4;height:100%}
-   .logo{height:60px;display:flex;align-items:center;justify-content:center;margin-bottom:25px}
-   .logo img{height:100%;max-width:none;object-fit:contain;transform:scale(1.9) translateY(8px)}
+    .logo{height:90px;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+    .logo img{max-height:90px;max-width:280px}
+    .logo-fallback{text-align:center;color:var(--red);font-weight:900}.logo-fallback .cn{font-size:22px;letter-spacing:4px}.logo-fallback .en{font-size:26px}.logo-fallback .sm{font-size:10px}
     .title-grid{display:grid;grid-template-columns:1fr 1fr;gap:62px}
     .vn-title{font-size:43px;font-weight:900;text-align:center}.vn-sub{font-size:16px;text-align:center;color:#777;letter-spacing:2.5px}.cn-title{font-size:45px;font-weight:900;text-align:center}
     .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;margin-top:38px}
@@ -84,8 +85,7 @@
     .stamp:before,.stamp:after{content:"";position:absolute;inset:9px;border:2px solid var(--red);border-radius:50%}
     
     .stamp-text{z-index:2;font-size:18px;line-height:1.08}.stamp-text span{font-size:10px;display:block}
-    .sign{text-align:center;font-size:18px;line-height:1.32}
-   .sign img{max-width:280px;max-height:115px;object-fit:contain;display:block;margin:0 auto -35px}
+    .sign{text-align:center;font-size:18px;line-height:1.32}.sign img{max-width:280px;max-height:115px;object-fit:contain;display:block;margin:0 auto -15px}
     .sign-line{border-bottom:1.8px solid #777;height:24px;width:215px;margin:0 auto 5px}
     .top-cert{background:#fffdf1;padding:55px 78px}.top-cert:before{display:none}
     .top-red-frame{position:absolute;inset:0;border:16px solid #e00012;z-index:2}
