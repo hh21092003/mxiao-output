@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MXiao - Tool tạo chứng nhận và đánh giá học viên</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --red: #d90818;
+      --red-2: #ff2f3f;
+      --dark-red: #82000b;
+      --soft-red: rgba(255, 239, 241, .74);
+      --cream: #fffaf4;
+      --ink: #241f21;
+      --muted: #70686b;
+      --line: rgba(255,255,255,.42);
+      --glass: rgba(255,255,255,.64);
+      --glass-strong: rgba(255,255,255,.82);
+      --shadow: 0 24px 70px rgba(132, 0, 12, .16);
+      --shadow-soft: 0 12px 36px rgba(132, 0, 12, .10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(255, 48, 64, .20), transparent 34%),
+        radial-gradient(circle at 92% 0%, rgba(255, 196, 196, .48), transparent 30%),
+        linear-gradient(135deg, #fff6f6 0%, #fff 34%, #fff4ef 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(217, 8, 24, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(217, 8, 24, .035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 80%);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 440px 1fr;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    aside {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      background: linear-gradient(160deg, rgba(255,255,255,.82), rgba(255,245,246,.56));
+      border: 1px solid rgba(255,255,255,.76);
+      border-radius: 28px;
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(100vh - 36px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px) saturate(150%);
+      -webkit-backdrop-filter: blur(22px) saturate(150%);
+    }
+
+    main {
+      padding: 8px;
+      overflow: auto;
+      max-height: calc(100vh - 36px);
+      background: linear-gradient(160deg, rgba(255,255,255,.48), rgba(255,255,255,.20));
+      border: 1px solid rgba(255,255,255,.58);
+      border-radius: 30px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px) saturate(145%);
+      -webkit-backdrop-filter: blur(18px) saturate(145%);
+    }
+
+    h1, h2, h3, h4 { margin: 0 0 12px; }
+
+    h1 {
+      font-size: 26px;
+      letter-spacing: -0.7px;
+      background: linear-gradient(90deg, var(--dark-red), var(--red), #ff5d69);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 2px;
+      letter-spacing: -0.3px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-top: 4px;
+      color: var(--dark-red);
+    }
+
+    h4 { color: #3a3032; }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.48;
+      margin: 2px 0 0;
+    }
+
+    .brand-head {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 13px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(255,255,255,.74), rgba(255,238,240,.44));
+      border: 1px solid rgba(255,255,255,.76);
+      box-shadow: 0 10px 26px rgba(132,0,12,.08);
+    }
+
+    .brand-mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 950;
+      letter-spacing: -1px;
+      background: linear-gradient(145deg, var(--red), var(--dark-red));
+      box-shadow: 0 12px 26px rgba(217,8,24,.24);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-head h2, .section-head h3 { margin-bottom: 3px; }
+
+    .section-head p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .section-head.compact { margin-bottom: 10px; }
+
+    .section-badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--red);
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(217,8,24,.12);
+      box-shadow: 0 8px 18px rgba(132,0,12,.06);
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 9;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px;
+      margin-bottom: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(255,255,255,.75);
+      box-shadow: 0 10px 26px rgba(132,0,12,.08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .tabs button span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      font-size: 11px;
+      background: rgba(217,8,24,.08);
+      color: var(--red);
+    }
+
+    .tabs button.active span {
+      background: rgba(255,255,255,.22);
+      color: #fff;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 11px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: rgba(255,255,255,.74);
+      color: #4a393d;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.64);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(132,0,12,.12);
+    }
+
+    button.active, button.primary {
+      background: linear-gradient(135deg, var(--red), var(--dark-red));
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(217,8,24,.23);
+    }
+
+    button.secondary { background: #241f21; color: #fff; }
+    button.ghost { background: rgba(255,255,255,.72); color: #4a393d; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      margin: 13px 0 6px;
+      color: #473b3e;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(141, 0, 13, .10);
+      border-radius: 15px;
+      padding: 11px 12px;
+      font-size: 14px;
+      outline: none;
+      background: rgba(255,255,255,.78);
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 8px 18px rgba(132,0,12,.045);
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    textarea { min-height: 160px; resize: vertical; line-height: 1.55; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(217, 8, 24, .55);
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 0 0 4px rgba(217, 8, 24, .10), 0 10px 22px rgba(132,0,12,.08);
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    .card {
+      background: linear-gradient(160deg, rgba(255,255,255,.82), rgba(255,248,248,.58));
+      border: 1px solid rgba(255,255,255,.78);
+      border-radius: var(--radius);
+      padding: 17px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 32px rgba(132,0,12,.08);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+    }
+
+    .hidden { display: none !important; }
+
+    .preview-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin: 0 0 12px;
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.68);
+      border: 1px solid rgba(255,255,255,.72);
+      box-shadow: 0 10px 28px rgba(132,0,12,.08);
+      backdrop-filter: blur(18px) saturate(145%);
+      -webkit-backdrop-filter: blur(18px) saturate(145%);
+    }
+
+    .preview-kicker {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    .preview-title {
+      font-size: 22px;
+      font-weight: 950;
+      letter-spacing: -0.6px;
+      color: #2b2325;
+    }
+
+    .preview-meta {
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 900;
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(217,8,24,.12);
+    }
+
+    .preview-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-width: 760px;
+      padding: 20px 18px 28px;
+      min-height: calc(100vh - 140px);
+    }
+
+    .muted-note {
+      font-size: 12px;
+      color: #7a6e71;
+      line-height: 1.45;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(255,255,255,.74);
+      border-radius: 14px;
+    }
+
+    .small-btn { padding: 8px 10px; font-size: 12px; }
+
+    .slider-card {
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 18px;
+      padding: 13px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,.62);
+      box-shadow: 0 8px 22px rgba(132,0,12,.06);
+    }
+
+    .slider-title {
+      font-weight: 900;
+      font-size: 14px;
+      color: var(--dark-red);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 112px 1fr 56px;
+      gap: 10px;
+      align-items: center;
+      margin: 9px 0;
+      font-size: 13px;
+      color: #4a393d;
+    }
+
+    input[type="range"] {
+      padding: 0;
+      box-shadow: none;
+      accent-color: var(--red);
+      cursor: pointer;
+    }
+
+    .slider-row input[type="number"] {
+      padding: 8px 7px;
+      text-align: center;
+      border-radius: 12px;
+      font-weight: 800;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(217,8,24,.12), rgba(255,255,255,.78));
+      color: var(--red);
+      font-size: 12px;
+      padding: 5px 9px;
+      font-weight: 900;
+      border: 1px solid rgba(217,8,24,.12);
+    }
+
+    .mx-logo-text {
+      text-align: center;
+      color: var(--red);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .mx-logo-text .cn { font-size: 22px; letter-spacing: 4px; }
+    .mx-logo-text .en { font-size: 26px; }
+    .mx-logo-text .small { font-size: 10px; letter-spacing: 1px; margin-top: 2px; }
+
+    .cert {
+      width: 1123px;
+      height: 794px;
+      background: var(--cream);
+      position: relative;
+      overflow: hidden;
+      padding: 55px 78px;
+      transform-origin: top center;
+      box-shadow: 0 28px 80px rgba(132,0,12,.22);
+      border-radius: 6px;
+    }
+
+    .top-cert {
+      background: #fffdf1;
+      padding: 55px 78px;
+    }
+
+    .top-cert .cert-inner { z-index: 5; }
+
+    .top-red-frame {
+      position: absolute;
+      inset: 0;
+      border: 16px solid #e00012;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .top-inner-frame {
+      position: absolute;
+      inset: 34px;
+      border: 3px solid #c98295;
+      box-shadow: inset 0 0 0 5px rgba(201,130,149,.45);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .top-pattern {
+      position: absolute;
+      inset: 28px;
+      opacity: .22;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse at 20% 30%, transparent 0 35px, rgba(230,220,70,.35) 36px 38px, transparent 39px 85px),
+        radial-gradient(ellipse at 70% 40%, transparent 0 35px, rgba(230,220,70,.35) 36px 38px, transparent 39px 85px),
+        radial-gradient(ellipse at 45% 75%, transparent 0 35px, rgba(230,220,70,.35) 36px 38px, transparent 39px 85px);
+      background-size: 220px 160px;
+    }
+
+    .top-inner { text-align: center; }
+    .top-logo { height: 78px; margin-bottom: 18px; }
+    .top-main-title { font-size: 54px; font-weight: 900; letter-spacing: -1px; }
+    .top-sub-title { font-size: 34px; font-weight: 900; margin-top: 6px; }
+    .top-name { font-family: "Brush Script MT", "Segoe Script", cursive; font-size: 92px; line-height: 1.05; margin: 20px 0 4px; color: #050505; }
+    .top-class { font-size: 24px; color: #333; margin-bottom: 20px; }
+    .top-body { font-size: 24px; line-height: 1.65; color: #444; }
+    .top-body b { color: #2d2d2d; }
+    .top-bottom { position: absolute; left: 110px; right: 110px; bottom: 66px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 120px; }
+    .top-sign img { max-width: 220px; max-height: 85px; }
+
+    .cert::before {
+      content: "";
+      position: absolute;
+      inset: 50px;
+      background-image: repeating-radial-gradient(circle at 50% 100%, transparent 0 26px, rgba(255,255,255,0.9) 27px 30px, transparent 31px 55px);
+      background-size: 92px 62px;
+      opacity: 0.75;
+      z-index: 0;
+    }
+
+    .top-cert::before { display: none; }
+
+    .border-a, .border-b, .border-c {
+      position: absolute;
+      inset: 12px;
+      border: 14px solid rgba(151, 5, 11, 0.88);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .border-b { inset: 27px; border-width: 4px; border-color: rgba(230, 62, 28, 0.95); }
+    .border-c { inset: 38px; border-width: 2px; border-color: rgba(151, 5, 11, 0.55); }
+
+    .corner {
+      position: absolute;
+      width: 86px;
+      height: 86px;
+      z-index: 3;
+      border: 14px solid rgba(151, 5, 11, 0.9);
+    }
+
+    .corner.tl { top: 22px; left: 22px; border-right: 0; border-bottom: 0; }
+    .corner.tr { top: 22px; right: 22px; border-left: 0; border-bottom: 0; }
+    .corner.bl { bottom: 22px; left: 22px; border-right: 0; border-top: 0; }
+    .corner.br { bottom: 22px; right: 22px; border-left: 0; border-top: 0; }
+
+    .cert-inner { position: relative; z-index: 4; height: 100%; }
+
+    .logo-slot {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .logo-slot img { max-height: 58px; max-width: 190px; object-fit: contain; }
+
+    .cert-title-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 62px;
+      align-items: start;
+    }
+
+    .cert-title {
+      font-size: 43px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: -1px;
+    }
+
+    .cert-subtitle {
+      font-size: 16px;
+      text-align: center;
+      color: #777;
+      letter-spacing: 2.5px;
+      margin-top: 4px;
+    }
+
+    .cert-cn-title {
+      font-size: 45px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      margin-top: 38px;
+    }
+
+    .field-line {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: end;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 19px;
+    }
+
+    .field-line .label { font-weight: 400; white-space: nowrap; }
+    .field-line .value {
+      border-bottom: 1.8px solid #777;
+      min-height: 30px;
+      text-align: center;
+      font-size: 24px;
+      line-height: 30px;
+      padding: 0 12px;
+      font-weight: 400;
+    }
+
+    .center-cert-text {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 22px;
+      line-height: 1.7;
+      color: #555;
+    }
+
+    .center-cert-text b { color: #333; }
+    .underline {
+      display: inline-block;
+      min-width: 275px;
+      border-bottom: 1.8px solid #777;
+      line-height: 1.1;
+    }
+
+    .bottom-cert {
+      position: absolute;
+      left: 92px;
+      right: 92px;
+      bottom: 48px;
+      display: grid;
+      grid-template-columns: 1fr 200px 1fr;
+      align-items: end;
+      gap: 22px;
+    }
+
+    .date-block { text-align: center; font-size: 19px; line-height: 1.45; }
+    .date-line { border-bottom: 1.8px solid #777; display: inline-block; min-width: 215px; padding-bottom: 5px; }
+
+    .stamp {
+      width: 140px;
+      height: 140px;
+      border: 7px solid var(--red);
+      border-radius: 50%;
+      color: var(--red);
+      margin: 0 auto;
+      transform: rotate(-13deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 900;
+      position: relative;
+      background: rgba(255,255,255,.28);
+    }
+
+    .stamp::before, .stamp::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 2px solid var(--red);
+      border-radius: 50%;
+    }
+
+    .stamp::after { inset: 22px; border-style: dashed; opacity: 0.65; }
+    .stamp .stamp-text { z-index: 2; font-size: 18px; line-height: 1.08; }
+    .stamp .small { font-size: 10px; display: block; margin-bottom: 3px; }
+
+    .sign-block { text-align: center; font-size: 18px; line-height: 1.32; }
+    .sign-block img { max-width: 190px; max-height: 75px; object-fit: contain; display: block; margin: 0 auto -5px; }
+    .sign-line { border-bottom: 1.8px solid #777; height: 24px; width: 215px; margin: 0 auto 5px; }
+
+    .report {
+      width: 794px;
+      min-height: 1123px;
+      background: #fff;
+      padding: 48px 54px;
+      box-shadow: 0 28px 80px rgba(132,0,12,.18);
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f1f1f;
+      line-height: 1.45;
+      border-radius: 8px;
+    }
+
+    .report-title {
+      text-align: center;
+      color: var(--red);
+      font-size: 25px;
+      font-weight: 900;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .report-subtitle {
+      text-align: center;
+      font-weight: 800;
+      margin-bottom: 22px;
+      text-transform: uppercase;
+    }
+
+    .report-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 26px;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      color: var(--red);
+      border-bottom: 2px solid var(--red);
+      padding-bottom: 5px;
+      margin: 22px 0 12px;
+      font-size: 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+      font-size: 13px;
+      page-break-inside: auto;
+    }
+
+    tr, td, th, .section-title, h4, p {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid #bdbdbd;
+      padding: 8px 9px;
+      vertical-align: top;
+    }
+
+    th { background: var(--soft-red); font-weight: 800; text-align: center; }
+    td.score { text-align: center; font-weight: 800; white-space: nowrap; }
+
+    .advice-box {
+      white-space: pre-line;
+      font-size: 14px;
+      text-align: justify;
+    }
+
+    .criteria-line {
+      font-size: 12px;
+      color: #555;
+      margin-top: 5px;
+    }
+
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; padding: 10px; }
+      aside { position: relative; top: 0; max-height: none; }
+      main { max-height: none; }
+      .cert { transform: scale(.72); }
+      .preview-wrap { min-width: auto; overflow: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand-head">
+        <div class="brand-mark">MX</div>
+        <div>
+          <h1>MXiao File Tool</h1>
+          <div class="sub">Tạo chứng nhận, báo cáo đánh giá theo chặng và báo cáo đánh giá cả khóa. File được tạo trực tiếp trên trình duyệt.</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button id="tabCert" class="active" onclick="switchMode('cert')"><span>01</span> Cert</button>
+        <button id="tabStage" onclick="switchMode('stage')"><span>02</span> Theo chặng</button>
+        <button id="tabCourse" onclick="switchMode('course')"><span>03</span> Cả khóa</button>
+      </div>
+
+      <section id="certForm">
+        <div class="card">
+          <div class="section-head"><div><h2>Thông tin chứng nhận</h2><p>Tạo chứng nhận A4 ngang, xuất PNG.</p></div><div class="section-badge">A4 ngang</div></div>
+          <div class="muted-note">Logo mặc định: <b>assets/MXC-LOGO.png</b>. Chữ ký mặc định: <b>assets/Hieu-Sign.png</b>.</div>
+
+          <label>Loại chứng nhận</label>
+          <select id="certType" onchange="renderAll()">
+            <option value="completion" selected>Chứng nhận hoàn thành khóa học</option>
+            <option value="topStudent">Giấy chứng nhận thủ khoa đầu ra</option>
+          </select>
+
+          <label>Họ và tên học viên</label>
+          <input id="certName" value="Vũ Hà Phương" oninput="renderAll()" />
+
+          <div class="completion-only">
+            <label>Ngày sinh</label>
+            <input id="certDob" value="21/01/2003" oninput="renderAll()" />
+          </div>
+
+          <label>Mã lớp</label>
+          <input id="certClass" value="MXA31" oninput="renderAll()" />
+
+          <label>Tên khóa học</label>
+          <select id="certCourse" onchange="renderAll()">
+            <option value="Khóa Vỡ lòng (0-HSK2)">Khóa Vỡ lòng (0-HSK2)</option>
+            <option value="Khóa Sơ cấp (0-HSK3)" selected>Khóa Sơ cấp (0-HSK3)</option>
+            <option value="Khóa Nâng cao (HSK4)">Khóa Nâng cao (HSK4)</option>
+            <option value="Khóa Thành thạo (HSK5)">Khóa Thành thạo (HSK5)</option>
+          </select>
+
+          <div class="row completion-only">
+            <div>
+              <label>Ngày bắt đầu</label>
+              <input id="certStart" value="08/09/2025" oninput="renderAll()" />
+            </div>
+            <div>
+              <label>Ngày kết thúc</label>
+              <input id="certEnd" value="21/01/2026" oninput="renderAll()" />
+            </div>
+          </div>
+
+          <label>Ngày cấp chứng nhận</label>
+          <input id="certIssue" type="date" value="2026-05-08" oninput="renderAll()" />
+
+          <div class="actions">
+            <button class="primary" onclick="downloadCertificateImage()">Tải ảnh PNG</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="stageForm" class="hidden">
+        <div class="card">
+          <div class="section-head"><div><h2>Đánh giá theo chặng</h2><p>Nhập dữ liệu, chấm thang điểm, xuất PDF A4 dọc.</p></div><div class="section-badge">PDF</div></div>
+          <label>Họ và tên</label>
+          <input id="stageName" value="Phạm Quỳnh Trâm" oninput="renderAll()" />
+          <div class="row">
+            <div><label>Giáo viên</label><input id="stageTeacher" value="Lê Hồng Anh" oninput="renderAll()" /></div>
+            <div><label>Mã lớp</label><input id="stageClass" value="MXA27" oninput="renderAll()" /></div>
+          </div>
+          <div class="row">
+            <div><label>Khóa học</label><input id="stageCourse" value="Khóa Sơ cấp (0-HSK3)" oninput="renderAll()" /></div>
+            <div><label>Chặng học</label><input id="stageLevel" value="HSK2" oninput="renderAll()" /></div>
+          </div>
+          <label>Điểm bài thi</label>
+          <input id="stageExam" value="74/100" oninput="renderAll()" />
+          <label>Nói</label>
+          <select id="stageSpeakingPass" onchange="renderAll()"><option>Đạt</option><option>Không đạt</option></select>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Thang điểm kỹ năng</h3><p>Kéo điểm hoặc nhập số trực tiếp.</p></div></div>
+          <div id="stageSkillSliders"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Thang điểm tinh thần học tập</h3><p>Dữ liệu dùng để tự viết nhận xét.</p></div></div>
+          <div id="stageSpiritSliders"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Tỉ lệ đi học và nộp bài</h3><p>Hệ thống tự tính phần trăm.</p></div></div>
+          <div class="row">
+            <div><label>Số buổi cần tham gia</label><input id="attendNeed" type="number" value="70" oninput="renderAll()" /></div>
+            <div><label>Số buổi thực tế đi học</label><input id="attendReal" type="number" value="69" oninput="renderAll()" /></div>
+          </div>
+          <div class="row">
+            <div><label>Số bài cần nộp</label><input id="homeworkNeed" type="number" value="70" oninput="renderAll()" /></div>
+            <div><label>Số bài thực tế nộp</label><input id="homeworkReal" type="number" value="70" oninput="renderAll()" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Định hướng và lời khuyên</h3><p>AI viết gợi ý dựa trên các tiêu chí điểm thấp.</p></div></div>
+          <div class="actions"><button class="small-btn primary" onclick="generateAdvice('stage')">AI gợi ý định hướng</button><button class="small-btn ghost" onclick="templateAdvice('stage')">Dùng mẫu có sẵn</button></div>
+          <label>Nội dung định hướng có thể sửa</label>
+          <textarea id="stageAdvice" oninput="renderAll()"></textarea>
+          <div class="actions"><button class="primary" onclick="downloadPdf('stageReport','danh-gia-theo-chang.pdf')">Xuất PDF</button></div>
+        </div>
+      </section>
+
+      <section id="courseForm" class="hidden">
+        <div class="card">
+          <div class="section-head"><div><h2>Đánh giá cả khóa</h2><p>Tổng kết kết quả, nhận xét cuối khóa và lời cảm ơn.</p></div><div class="section-badge">Final</div></div>
+          <label>Họ và tên</label>
+          <input id="courseName" value="Vũ Hà Phương" oninput="renderAll()" />
+          <div class="row">
+            <div><label>Giáo viên</label><input id="courseTeacher" value="Đoàn Thị Hoàng Oanh" oninput="renderAll()" /></div>
+            <div><label>Mã lớp</label><input id="courseClass" value="MXA31" oninput="renderAll()" /></div>
+          </div>
+          <label>Khóa học</label>
+          <input id="courseCourse" value="Khóa Sơ cấp (0-HSK3)" oninput="renderAll()" />
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Bảng điểm thi kết thúc khóa</h3><p>Điểm 3 kỹ năng và trạng thái kỹ năng nói.</p></div></div>
+          <div class="three">
+            <div><label>Nghe</label><input id="examListen" type="number" value="88" oninput="renderAll()" /></div>
+            <div><label>Đọc</label><input id="examRead" type="number" value="100" oninput="renderAll()" /></div>
+            <div><label>Viết</label><input id="examWrite" type="number" value="100" oninput="renderAll()" /></div>
+          </div>
+          <label>Nói</label>
+          <select id="examSpeak" onchange="renderAll()"><option>Đạt</option><option>Không đạt</option></select>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Thang điểm kỹ năng cuối khóa</h3><p>Dùng để sinh nhận xét chặng HSK3.</p></div></div>
+          <div id="courseSkillSliders"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Tổng kết quá trình học</h3><p>Nhập điểm từng chặng, hệ thống tự tính TBC.</p></div></div>
+          <div class="three">
+            <div><label>HSK1</label><input id="scoreHsk1" type="number" step="0.1" value="9.0" oninput="renderAll()" /></div>
+            <div><label>HSK2</label><input id="scoreHsk2" type="number" step="0.1" value="8.8" oninput="renderAll()" /></div>
+            <div><label>HSK3</label><input id="scoreHsk3" type="number" step="0.1" value="9.1" oninput="renderAll()" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head compact"><div><h3>Định hướng sau khóa học</h3><p>AI hoặc mẫu có sẵn sẽ viết phần định hướng cuối khóa.</p></div></div>
+          <div class="actions"><button class="small-btn primary" onclick="generateAdvice('course')">AI gợi ý định hướng</button><button class="small-btn ghost" onclick="templateAdvice('course')">Dùng mẫu có sẵn</button></div>
+          <label>Nội dung định hướng có thể sửa</label>
+          <textarea id="courseAdvice" oninput="renderAll()"></textarea>
+          <div class="actions"><button class="primary" onclick="downloadPdf('courseReport','danh-gia-ca-khoa.pdf')">Xuất PDF</button></div>
+        </div>
+      </section>
+    </aside>
+
+    <main>
+      <div class="preview-topbar">
+        <div>
+          <div class="preview-kicker">Live Preview</div>
+          <div id="previewTitle" class="preview-title">Chứng nhận</div>
+        </div>
+        <div id="previewMeta" class="preview-meta">A4 ngang - PNG</div>
+      </div>
+      <div id="previewCert" class="preview-wrap"></div>
+      <div id="previewStage" class="preview-wrap hidden"></div>
+      <div id="previewCourse" class="preview-wrap hidden"></div>
+    </main>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const GEMINI_API_KEY = 'AIzaSyBOTgvTae7G0gQzCbI4fPWc5HzZhEZv9DY';
+    const ASSETS = {
+      logo: 'assets/MXC-LOGO.png',
+      signature: 'assets/Hieu-Sign.png'
+    };
+    let mode = 'cert';
+
+    const courseOutputs = {
+      'Khóa Vỡ lòng (0-HSK2)': 'HSK2',
+      'Khóa Sơ cấp (0-HSK3)': 'HSK3 - HSKK Sơ cấp',
+      'Khóa Nâng cao (HSK4)': 'HSK4 - HSKK Bậc 4',
+      'Khóa Thành thạo (HSK5)': 'HSK5 - HSKK Bậc 5'
+    };
+
+    const DATA = {
+      skills: [
+        { key: 'knowledge', label: 'Nắm vững kiến thức', criteria: ['Từ vựng', 'Ngữ pháp', 'Ghi nhớ bài cũ', 'Vận dụng mẫu câu'] },
+        { key: 'reading', label: 'Kỹ năng đọc', criteria: ['Mặt chữ', 'Ý chính', 'Chi tiết', 'Câu dài'] },
+        { key: 'listening', label: 'Kỹ năng nghe', criteria: ['Nhận diện âm', 'Từ khóa', 'Ý chính', 'Tốc độ'] },
+        { key: 'speaking', label: 'Kỹ năng nói', criteria: ['Phát âm', 'Thanh điệu', 'Tự tin', 'Phản xạ'] }
+      ],
+      spirit: [
+        { key: 'learning', label: 'Tinh thần học tập', criteria: ['Tập trung', 'Chủ động ôn bài', 'Ổn định'] },
+        { key: 'interaction', label: 'Tương tác trong lớp', criteria: ['Trả lời câu hỏi', 'Luyện tập nhóm', 'Chủ động hỏi lại'] },
+        { key: 'discipline', label: 'Kỷ luật học tập', criteria: ['Đi học đúng giờ', 'Nộp bài đúng hạn', 'Làm bài đúng yêu cầu'] }
+      ]
+    };
+
+    const defaultScores = {
+      knowledge: [9, 9, 9, 9],
+      reading: [9, 9, 8.5, 8],
+      listening: [9, 9, 9, 8.5],
+      speaking: [8.5, 8.5, 9, 8],
+      learning: [9, 8.5, 9],
+      interaction: [8.5, 8.5, 8],
+      discipline: [9, 9, 9]
+    };
+
+    function switchMode(next) {
+      mode = next;
+      const titles = {
+        cert: ['Chứng nhận', 'A4 ngang - PNG'],
+        stage: ['Đánh giá theo chặng', 'A4 dọc - PDF nhiều trang'],
+        course: ['Đánh giá cả khóa', 'A4 dọc - PDF nhiều trang']
+      };
+      if ($('previewTitle')) $('previewTitle').textContent = titles[next][0];
+      if ($('previewMeta')) $('previewMeta').textContent = titles[next][1];
+      ['Cert','Stage','Course'].forEach(name => $('tab' + name).classList.remove('active'));
+      $('tab' + next.charAt(0).toUpperCase() + next.slice(1)).classList.add('active');
+      $('certForm').classList.toggle('hidden', next !== 'cert');
+      $('stageForm').classList.toggle('hidden', next !== 'stage');
+      $('courseForm').classList.toggle('hidden', next !== 'course');
+      $('previewCert').classList.toggle('hidden', next !== 'cert');
+      $('previewStage').classList.toggle('hidden', next !== 'stage');
+      $('previewCourse').classList.toggle('hidden', next !== 'course');
+      renderAll();
+    }
+
+    function formatDateVietnamese(dateValue) {
+      const d = new Date(dateValue + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return '';
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `Ngày ${dd} tháng ${mm} năm ${yyyy}`;
+    }
+
+    function formatDateChinese(dateValue) {
+      const d = new Date(dateValue + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return '';
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}年${mm}月${dd}日`;
+    }
+
+    function renderSliderGroups(containerId, prefix, groups) {
+      const container = $(containerId);
+      container.innerHTML = groups.map(group => `
+        <div class="slider-card">
+          <div class="slider-title">${group.label} <span class="pill" id="${prefix}_${group.key}_avg_pill">0/10</span></div>
+          ${group.criteria.map((criterion, index) => {
+            const val = defaultScores[group.key]?.[index] ?? 8;
+            return `
+              <div class="slider-row">
+                <div>${criterion}</div>
+                <input type="range" min="0" max="10" step="0.5" id="${prefix}_${group.key}_${index}" value="${val}" oninput="syncScore('${prefix}_${group.key}_${index}'); renderAll();" />
+                <input type="number" min="0" max="10" step="0.5" id="${prefix}_${group.key}_${index}_num" value="${val}" oninput="syncScore('${prefix}_${group.key}_${index}', true); renderAll();" />
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `).join('');
+    }
+
+    function syncScore(id, fromNum = false) {
+      const range = $(id);
+      const num = $(id + '_num');
+      if (!range || !num) return;
+      if (fromNum) range.value = num.value;
+      else num.value = range.value;
+    }
+
+    function getGroup(prefix, group) {
+      const scores = group.criteria.map((_, i) => Number($(`${prefix}_${group.key}_${i}`)?.value || 0));
+      const average = avg(scores);
+      return { ...group, scores, average };
+    }
+
+    function levelText(score) {
+      if (score >= 9) return 'rất tốt';
+      if (score >= 8) return 'tốt';
+      if (score >= 7) return 'khá';
+      if (score >= 6) return 'cần củng cố';
+      return 'cần cải thiện nhiều';
+    }
+
+    function getStrongWeak(group) {
+      const pairs = group.criteria.map((c, i) => ({ label: c, score: group.scores[i] }));
+      const strong = pairs.filter(x => x.score >= 8.5).map(x => x.label.toLowerCase());
+      const weak = pairs.filter(x => x.score < 7.5).map(x => x.label.toLowerCase());
+      return { strong, weak };
+    }
+
+    function sentenceForSkill(group) {
+      const { strong, weak } = getStrongWeak(group);
+      let text = `${group.label} đạt mức ${levelText(group.average)}.`;
+      if (strong.length) text += ` Điểm nổi bật là ${strong.slice(0, 2).join(', ')}.`;
+      if (weak.length) text += ` Cần củng cố thêm ${weak.slice(0, 2).join(', ')}.`;
+      return text;
+    }
+
+    function sentenceForSpirit(group) {
+      const { strong, weak } = getStrongWeak(group);
+      let text = `${group.label} ở mức ${levelText(group.average)}.`;
+      if (strong.length) text += ` Học viên thể hiện tốt ở ${strong.slice(0, 2).join(', ')}.`;
+      if (weak.length) text += ` Cần cải thiện thêm ${weak.slice(0, 2).join(', ')}.`;
+      return text;
+    }
+
+    function avg(nums) {
+      const valid = nums.map(Number).filter(n => !Number.isNaN(n));
+      if (!valid.length) return 0;
+      return valid.reduce((a,b) => a + b, 0) / valid.length;
+    }
+
+    function pct(real, need) {
+      const r = Number(real), n = Number(need);
+      if (!n || Number.isNaN(r) || Number.isNaN(n)) return '0%';
+      return `${Math.round(r / n * 100)}%`;
+    }
+
+    function updateAveragePills() {
+      ['stage', 'course'].forEach(prefix => {
+        DATA.skills.forEach(group => {
+          const g = getGroup(prefix, group);
+          const pill = $(`${prefix}_${group.key}_avg_pill`);
+          if (pill) pill.textContent = `${g.average.toFixed(1)}/10`;
+        });
+      });
+      DATA.spirit.forEach(group => {
+        const g = getGroup('stage_spirit', group);
+        const pill = $(`stage_spirit_${group.key}_avg_pill`);
+        if (pill) pill.textContent = `${g.average.toFixed(1)}/10`;
+      });
+    }
+
+    function renderCertificate() {
+      const type = $('certType').value;
+      if (type === 'topStudent') renderTopStudentCertificate();
+      else renderCompletionCertificate();
+    }
+
+    function renderCompletionCertificate() {
+      const course = $('certCourse').value;
+      const output = courseOutputs[course] || '';
+      const logoHtml = `<img src="${ASSETS.logo}" onerror="this.outerHTML='<div class=&quot;mx-logo-text&quot;><div class=&quot;cn&quot;>鸣笑</div><div class=&quot;en&quot;>MXIAO</div><div class=&quot;small&quot;>CHINESE LEARNING</div></div>'" />`;
+      const signHtml = `<img src="${ASSETS.signature}" onerror="this.outerHTML='<div style=&quot;height:60px;font-family:cursive;font-size:42px;line-height:60px;&quot;>Hieu</div>'" />`;
+      $('previewCert').innerHTML = `
+        <div id="certificate" class="cert">
+          <div class="border-a"></div><div class="border-b"></div><div class="border-c"></div>
+          <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+          <div class="cert-inner">
+            <div class="logo-slot">${logoHtml}</div>
+            <div class="cert-title-grid">
+              <div><div class="cert-title">CHỨNG NHẬN</div><div class="cert-subtitle">HOÀN THÀNH KHÓA HỌC</div></div>
+              <div><div class="cert-cn-title">课程结业证书</div></div>
+            </div>
+            <div class="info-grid">
+              <div>
+                <div class="field-line"><div class="label">Học viên:</div><div class="value">${$('certName').value}</div></div>
+                <div class="field-line"><div class="label">Sinh ngày:</div><div class="value">${$('certDob').value}</div></div>
+                <div class="field-line"><div class="label">Lớp:</div><div class="value">${$('certClass').value}</div></div>
+              </div>
+              <div>
+                <div class="field-line"><div class="label">学员姓名:</div><div class="value">${$('certName').value}</div></div>
+                <div class="field-line"><div class="label">出生日期:</div><div class="value">${$('certDob').value}</div></div>
+                <div class="field-line"><div class="label">班级:</div><div class="value">${$('certClass').value}</div></div>
+              </div>
+            </div>
+            <div class="center-cert-text">
+              Đã hoàn thành <b>${course}</b><br />
+              Thời gian đào tạo: <span class="underline">${$('certStart').value} - ${$('certEnd').value}</span><br />
+              Đầu ra đạt chuẩn: ${output}
+            </div>
+            <div class="bottom-cert">
+              <div class="date-block">
+                <div class="date-line">${formatDateChinese($('certIssue').value)}</div>
+                <div>${formatDateVietnamese($('certIssue').value)}</div>
+              </div>
+              <div class="stamp"><div class="stamp-text"><span class="small">CHỨNG NHẬN</span>${course.replace('Khóa ', '').replace(' (', '<br>(')}</div></div>
+              <div class="sign-block">
+                ${signHtml}
+                <div class="sign-line"></div>
+                <div>教学总监</div>
+                <div>Giám đốc Học thuật</div>
+                <b>Vũ Minh Hiếu</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTopStudentCertificate() {
+      const course = $('certCourse').value;
+      const logoHtml = `<img src="${ASSETS.logo}" onerror="this.outerHTML='<div class=&quot;mx-logo-text&quot;><div class=&quot;cn&quot;>鸣笑</div><div class=&quot;en&quot;>MXIAO</div><div class=&quot;small&quot;>CHINESE LEARNING</div></div>'" />`;
+      const signHtml = `<img src="${ASSETS.signature}" onerror="this.outerHTML='<div style=&quot;height:60px;font-family:cursive;font-size:42px;line-height:60px;&quot;>Hieu</div>'" />`;
+      $('previewCert').innerHTML = `
+        <div id="certificate" class="cert top-cert">
+          <div class="top-red-frame"></div>
+          <div class="top-inner-frame"></div>
+          <div class="top-pattern"></div>
+          <div class="cert-inner top-inner">
+            <div class="logo-slot top-logo">${logoHtml}</div>
+            <div class="top-main-title">GIẤY CHỨNG NHẬN</div>
+            <div class="top-sub-title">THỦ KHOA ĐẦU RA</div>
+            <div class="top-name">${$('certName').value}</div>
+            <div class="top-class">Học viên lớp ${$('certClass').value}</div>
+            <div class="top-body">
+              Đã hoàn thành xuất sắc ${course}<br />
+              tại MXiao Chinese và đạt danh hiệu <b>Thủ Khoa Đầu ra</b>
+            </div>
+            <div class="top-bottom">
+              <div class="date-block">
+                <div class="date-line">${formatDateChinese($('certIssue').value)}</div>
+                <div>${formatDateVietnamese($('certIssue').value)}</div>
+              </div>
+              <div class="sign-block top-sign">
+                ${signHtml}
+                <div class="sign-line"></div>
+                <div>Giám đốc Học thuật</div>
+                <b>Vũ Minh Hiếu</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStageReport() {
+      const skillRows = DATA.skills.map(group => getGroup('stage', group));
+      const spiritRows = DATA.spirit.map(group => getGroup('stage_spirit', group));
+      const skillAvg = avg(skillRows.map(x => x.average));
+      const attend = pct($('attendReal').value, $('attendNeed').value);
+      const homework = pct($('homeworkReal').value, $('homeworkNeed').value);
+      $('previewStage').innerHTML = `
+        <div id="stageReport" class="report">
+          <div class="report-title">Đánh giá học viên theo chặng</div>
+          <div class="report-subtitle">${$('stageCourse').value}</div>
+          <div class="report-meta">
+            <div><b>Họ và tên:</b> ${$('stageName').value}</div>
+            <div><b>Mã lớp:</b> ${$('stageClass').value}</div>
+            <div><b>Giảng viên:</b> ${$('stageTeacher').value}</div>
+            <div><b>Chặng học:</b> ${$('stageLevel').value}</div>
+          </div>
+          <div class="section-title">1. Đánh giá theo chặng</div>
+          <h4>1.1. Điểm số bài thi</h4>
+          <table><tr><th>Bài thi</th><th>Tổng</th><th>Nói</th><th>Ghi chú</th></tr><tr><td>Điểm</td><td class="score">${$('stageExam').value}</td><td class="score">${$('stageSpeakingPass').value}</td><td></td></tr></table>
+          <h4>1.2. Đánh giá kỹ năng</h4>
+          <table><tr><th>Hạng mục</th><th>Điểm số<br>(thang 10)</th><th>Nhận xét chi tiết</th></tr>
+            ${skillRows.map(r => `<tr><td><b>${r.label}</b><div class="criteria-line">${r.criteria.map((c,i) => `${c}: ${r.scores[i]}`).join(' | ')}</div></td><td class="score">${r.average.toFixed(1)}</td><td>${sentenceForSkill(r)}</td></tr>`).join('')}
+            <tr><td><b>TBC</b></td><td class="score">${skillAvg.toFixed(1)}</td><td>Học viên có nền tảng ${levelText(skillAvg)} để tiếp tục phát triển ở chặng tiếp theo.</td></tr>
+          </table>
+          <h4>1.3. Đánh giá tinh thần học tập</h4>
+          <table><tr><th>Hạng mục</th><th>Nhận xét cụ thể</th></tr>${spiritRows.map(r => `<tr><td><b>${r.label}</b><div class="criteria-line">${r.criteria.map((c,i) => `${c}: ${r.scores[i]}`).join(' | ')}</div></td><td>${sentenceForSpirit(r)}</td></tr>`).join('')}</table>
+          <h4>1.4. Đánh giá tỉ lệ đi học/nộp bài tập</h4>
+          <table><tr><th>Hạng mục</th><th>Tỉ lệ</th><th>Ghi chú</th></tr><tr><td>Tỉ lệ đi học (%)</td><td class="score">${attend}</td><td>${$('attendReal').value}/${$('attendNeed').value} buổi</td></tr><tr><td>Tỉ lệ nộp bài tập (%)</td><td class="score">${homework}</td><td>${$('homeworkReal').value}/${$('homeworkNeed').value} bài</td></tr></table>
+          <div class="section-title">2. Định hướng và lời khuyên từ giáo viên</div>
+          <div class="advice-box">${$('stageAdvice').value}</div>
+        </div>
+      `;
+    }
+
+    function renderCourseReport() {
+      const skillRows = DATA.skills.map(group => getGroup('course', group));
+      const avgCourseSkill = avg(skillRows.map(x => x.average));
+      const s1 = Number($('scoreHsk1').value || 0), s2 = Number($('scoreHsk2').value || 0), s3 = Number($('scoreHsk3').value || 0);
+      const finalAvg = avg([s1,s2,s3]);
+      $('previewCourse').innerHTML = `
+        <div id="courseReport" class="report">
+          <div class="report-title">Báo cáo đánh giá học viên</div>
+          <div class="report-subtitle">${$('courseCourse').value}</div>
+          <div class="report-meta">
+            <div><b>Họ và tên:</b> ${$('courseName').value}</div>
+            <div><b>Mã lớp:</b> ${$('courseClass').value}</div>
+            <div><b>Giảng viên:</b> ${$('courseTeacher').value}</div>
+          </div>
+          <div class="section-title">1. Kết quả quá trình học</div>
+          <table><tr><th>Bài thi</th><th>Nghe</th><th>Đọc</th><th>Viết</th><th>Nói</th></tr><tr><td>Điểm</td><td class="score">${$('examListen').value}</td><td class="score">${$('examRead').value}</td><td class="score">${$('examWrite').value}</td><td class="score">${$('examSpeak').value}</td></tr></table>
+          <div class="section-title">2. Nhận xét chặng HSK3</div>
+          <table><tr><th>Chặng học HSK3</th><th>Nhận xét chi tiết</th><th>Điểm</th></tr>
+            ${skillRows.map(r => `<tr><td><b>${r.label.toUpperCase()}</b><div class="criteria-line">${r.criteria.map((c,i) => `${c}: ${r.scores[i]}`).join(' | ')}</div></td><td>${sentenceForSkill(r)}</td><td class="score">${r.average.toFixed(1)}/10</td></tr>`).join('')}
+            <tr><td colspan="2"><b>TRUNG BÌNH ĐÁNH GIÁ</b></td><td class="score">${avgCourseSkill.toFixed(1)}/10</td></tr>
+          </table>
+          <div class="section-title">3. Tổng kết quá trình học</div>
+          <table><tr><th>Chặng</th><th>HSK1</th><th>HSK2</th><th>HSK3</th><th>Tổng kết</th></tr><tr><td>Điểm</td><td class="score">${s1.toFixed(1)}</td><td class="score">${s2.toFixed(1)}</td><td class="score">${s3.toFixed(1)}</td><td class="score">${finalAvg.toFixed(1)}/10</td></tr></table>
+          <p><b>Học viên ĐẠT điều kiện kiến thức đầu ra HSK 3 và HSKK Sơ cấp.</b></p>
+          <div class="section-title">4. Định hướng sau khóa học</div>
+          <div class="advice-box">${$('courseAdvice').value}</div>
+          <div class="section-title">Lời cảm ơn</div>
+          <p>Cảm ơn bạn đã đồng hành cùng MXiao Chinese đến những buổi học cuối cùng trên con đường chinh phục tiếng Trung đầy thử thách này!</p>
+          <p>Trong suốt khóa học, MXiao Chinese tin rằng bạn đã dành rất nhiều nỗ lực và đã có những tiến bộ lớn trong việc nâng cao trình độ tiếng Trung của mình. Tuy nhiên, chúng ta cần hiểu rằng việc kết thúc khóa học không đồng nghĩa với việc kết thúc quá trình học tập. Nếu bạn không tiếp tục duy trì thói quen học tiếng Trung trong thời gian tới, những gì đã đạt được trong khóa học có thể sẽ dần phai nhạt.</p>
+          <p>MXiao Chinese hy vọng rằng bạn sẽ tiếp tục áp dụng những kiến thức đã học, không ngừng học hỏi và rèn luyện tiếng Trung trong cuộc sống hàng ngày. Hãy nhớ rằng học ngôn ngữ là một hành trình dài, và sự kiên trì sẽ giúp bạn đạt được những thành công xa hơn nữa.</p>
+          <p>Chúc bạn luôn giữ được đam mê và tiếp tục tiến bộ trên con đường học tiếng Trung!</p>
+        </div>
+      `;
+    }
+
+    function findWeakCriteria(prefix) {
+      const groups = DATA.skills.map(g => getGroup(prefix, g));
+      return groups.flatMap(g => g.criteria.map((c, i) => ({ group: g.label, criterion: c, score: g.scores[i] }))).sort((a,b) => a.score - b.score).slice(0, 5);
+    }
+
+    function templateAdvice(type) {
+      if (type === 'stage') {
+        const name = $('stageName').value;
+        const level = $('stageLevel').value;
+        const weak = findWeakCriteria('stage').map(x => `${x.group} - ${x.criterion.toLowerCase()}`).join(', ');
+        $('stageAdvice').value = `${name} đã hoàn thành chặng ${level} với kết quả tích cực. Dựa trên thang điểm kỹ năng, các nội dung cần ưu tiên củng cố trong giai đoạn tiếp theo gồm: ${weak}.
+
+Ở chặng học tiếp theo, giáo viên khuyến khích học viên duy trì nhịp ôn tập đều sau mỗi buổi, luyện nghe lại bài khóa, đọc thành tiếng các mẫu câu quan trọng và chủ động sử dụng từ vựng mới trong phần luyện nói. Nếu giữ được tinh thần học tập hiện tại, học viên có nền tảng tốt để tiếp tục phát triển lên cấp độ cao hơn.`;
+      } else {
+        const name = $('courseName').value;
+        const weak = findWeakCriteria('course').map(x => `${x.group} - ${x.criterion.toLowerCase()}`).join(', ');
+        $('courseAdvice').value = `Sau khi hoàn thành khóa học, ${name} đã có nền tảng tương đối vững chắc về từ vựng, ngữ pháp và các kỹ năng sử dụng tiếng Trung. Dựa trên kết quả cuối khóa, các nội dung nên tiếp tục củng cố gồm: ${weak}.
+
+Nếu có ý định thi chứng chỉ, học viên nên luyện thêm đề HSK/HSKK mẫu, phân tích lỗi sai sau mỗi đề và duy trì thói quen nghe - đọc - nói hằng tuần. Việc tiếp tục học lên cấp độ cao hơn sẽ giúp học viên giữ mạch tiến bộ và hoàn thiện khả năng sử dụng tiếng Trung trong cả bốn kỹ năng.`;
+      }
+      renderAll();
+    }
+
+    async function generateAdvice(type) {
+      const prompt = type === 'stage' ? buildStagePrompt() : buildCoursePrompt();
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text) throw new Error(JSON.stringify(data));
+        if (type === 'stage') $('stageAdvice').value = text;
+        else $('courseAdvice').value = text;
+        renderAll();
+      } catch (err) {
+        console.error(err);
+        alert('Không gọi được Gemini. Kiểm tra API key hoặc dùng mẫu có sẵn.');
+      }
+    }
+
+    function scoreSummary(prefix) {
+      return DATA.skills.map(group => {
+        const g = getGroup(prefix, group);
+        return `${g.label}: TB ${g.average.toFixed(1)}/10 (${g.criteria.map((c,i) => `${c} ${g.scores[i]}`).join(', ')})`;
+      }).join('
+');
+    }
+
+    function buildStagePrompt() {
+      return `Viết phần ĐỊNH HƯỚNG VÀ LỜI KHUYÊN TỪ GIÁO VIÊN cho báo cáo học viên MXiao Chinese. Văn phong chuyên nghiệp, ấm áp, rõ định hướng, không sáo rỗng, không dùng câu quá dài.
+Học viên: ${$('stageName').value}
+Chặng học: ${$('stageLevel').value}
+Điểm bài thi: ${$('stageExam').value}
+Nói: ${$('stageSpeakingPass').value}
+Thang điểm kỹ năng:
+${scoreSummary('stage')}
+Viết 3 đoạn ngắn. Ưu tiên nhận xét dựa trên các tiêu chí điểm thấp nhất.`;
+    }
+
+    function buildCoursePrompt() {
+      return `Viết phần ĐỊNH HƯỚNG SAU KHÓA HỌC cho báo cáo học viên MXiao Chinese. Văn phong chuyên nghiệp, ấm áp, rõ định hướng, không sáo rỗng, không dùng câu quá dài.
+Học viên: ${$('courseName').value}
+Điểm thi kết thúc khóa: Nghe ${$('examListen').value}, Đọc ${$('examRead').value}, Viết ${$('examWrite').value}, Nói ${$('examSpeak').value}
+Thang điểm kỹ năng cuối khóa:
+${scoreSummary('course')}
+Điểm chặng: HSK1 ${$('scoreHsk1').value}, HSK2 ${$('scoreHsk2').value}, HSK3 ${$('scoreHsk3').value}
+Viết 2-3 đoạn ngắn. Có định hướng học tiếp và ôn chứng chỉ nếu phù hợp.`;
+    }
+
+    async function downloadCertificateImage() {
+      const node = $('certificate');
+      const canvas = await html2canvas(node, { scale: 3, useCORS: true, backgroundColor: null });
+      const link = document.createElement('a');
+      link.download = `MXiao_Cert_${$('certName').value.replaceAll(' ', '_')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    async function downloadPdf(elementId, fileName) {
+      const node = $(elementId);
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidthMm = 210;
+      const pageHeightMm = 297;
+      const pageHeightPx = Math.floor(canvas.width * pageHeightMm / pageWidthMm);
+      let renderedHeight = 0;
+      let pageIndex = 0;
+
+      while (renderedHeight < canvas.height) {
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, renderedHeight, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+        const imgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+        const imgHeightMm = sliceHeight * pageWidthMm / canvas.width;
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageWidthMm, imgHeightMm);
+        renderedHeight += sliceHeight;
+        pageIndex += 1;
+      }
+
+      pdf.save(fileName);
+    }
+
+    function updateCertFormVisibility() {
+      const isCompletion = $('certType')?.value !== 'topStudent';
+      document.querySelectorAll('.completion-only').forEach(el => el.classList.toggle('hidden', !isCompletion));
+    }
+
+    function renderAll() {
+      updateCertFormVisibility();
+      updateAveragePills();
+      renderCertificate();
+      renderStageReport();
+      renderCourseReport();
+    }
+
+    function boot() {
+      renderSliderGroups('stageSkillSliders', 'stage', DATA.skills);
+      renderSliderGroups('stageSpiritSliders', 'stage_spirit', DATA.spirit);
+      renderSliderGroups('courseSkillSliders', 'course', DATA.skills);
+      templateAdvice('stage');
+      templateAdvice('course');
+      renderAll();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
