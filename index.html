@@ -84,10 +84,8 @@
     .date-block{text-align:center;font-size:19px;line-height:1.45}
     .date-line{border-bottom:1.8px solid #777;display:inline-block;min-width:215px;padding-bottom:5px}
     
-    .stamp{width:140px;height:140px;border:7px solid var(--red);border-radius:50%;color:var(--red);margin:0 auto;transform:rotate(-13deg);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;position:relative}
-    .stamp:before,.stamp:after{content:"";position:absolute;inset:9px;border:2px solid var(--red);border-radius:50%}
-    
-    .stamp-text{z-index:2;font-size:18px;line-height:1.08}.stamp-text span{font-size:10px;display:block}
+   .stamp{width:140px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center}
+   .stamp img{width:100%;height:100%;object-fit:contain}
     .sign{text-align:center;font-size:18px;line-height:1.32}.sign img{max-width:280px;max-height:115px;object-fit:contain;display:block;margin:0 auto -15px}
     .sign-line{border-bottom:1.8px solid #777;height:24px;width:215px;margin:0 auto 5px}
     .top-cert{background:#fffdf1;padding:55px 78px}.top-cert:before{display:none}
@@ -960,6 +958,10 @@
   }
   function renderEndCert() {
     const c=$('certCourse').value;
+       let stampFile = 'assets/H2.png';
+    if (c.includes('HSK3')) stampFile = 'assets/H3.png';
+    else if (c.includes('HSK4')) stampFile = 'assets/H4.png';
+    else if (c.includes('HSK5')) stampFile = 'assets/H5.png';
     $('previewCert').innerHTML=`<div id="certificate" class="cert">
       <div class="border-a"></div><div class="border-b"></div><div class="border-c"></div>
       <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
@@ -984,7 +986,7 @@
         <div class="center-text">Đã hoàn thành <b>${c}</b><br>Thời gian đào tạo: <span class="underline">${$('certStart').value} - ${$('certEnd').value}</span><br>Đầu ra đạt chuẩn: ${courseOutputs[c]||''}</div>
         <div class="bottom-cert">
           <div class="date-block"><div class="date-line">${fmtCN($('certIssue').value)}</div><div>${fmtVN($('certIssue').value)}</div></div>
-          <div class="stamp"><div class="stamp-text"><span>CHỨNG NHẬN</span>${c.replace('Khóa ','').replace(' (','<br>(')}</div></div>
+          <div class="stamp"><img src="${stampFile}" alt="Đã đóng dấu" /></div>
           <div class="sign">${sign()}<div class="sign-line"></div><div>教学总监</div><div>Giám đốc Học thuật</div><b>Vũ Minh Hiếu</b></div>
         </div>
       </div>
