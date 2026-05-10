@@ -80,8 +80,8 @@
     .field-line .value{border-bottom:1.8px solid #777;min-height:30px;text-align:center;font-size:24px;line-height:30px;padding:0 12px}
     .center-text{text-align:center;margin-top:22px;font-size:22px;line-height:1.7;color:#555}
     .underline{display:inline-block;min-width:275px;border-bottom:1.8px solid #777}
-.bottom-cert{position:absolute;left:50px;right:50px;bottom:46px;display:grid;grid-template-columns:1fr 160px 1fr;align-items:end;gap:20px}
-.date-block{text-align:center;font-size:17px;line-height:1.35;padding-bottom:52px}
+.bottom-cert{position:absolute;left:50px;right:50px;bottom:46px;display:grid;grid-template-columns:1fr 160px 1fr;align-items:end;gap:20px;z-index:5}
+   .date-block{text-align:center;font-size:17px;line-height:1.35;padding-bottom:52px}
 .date-line{border-bottom:1.8px solid #777;display:inline-block;min-width:200px;padding-bottom:5px;white-space:nowrap}
 .date-block>div:last-child{white-space:nowrap;font-size:16px}
 .stamp{width:140px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative;top:0}
@@ -985,11 +985,11 @@
           </div>
         </div>
         <div class="center-text">Đã hoàn thành <b>${c}</b><br>Thời gian đào tạo: <span class="underline">${$('certStart').value} - ${$('certEnd').value}</span><br>Đầu ra đạt chuẩn: ${courseOutputs[c]||''}</div>
-        <div class="bottom-cert">
-          <div class="date-block"><div class="date-line">${fmtCN($('certIssue').value)}</div><div>${fmtVN($('certIssue').value)}</div></div>
-          <div class="stamp"><img src="${stampFile}" alt="Đã đóng dấu" /></div>
-          <div class="sign">${sign()}<div class="sign-line"></div><div>教学总监</div><div>Giám đốc Học thuật</div><b>Vũ Minh Hiếu</b></div>
-        </div>
+      </div>
+      <div class="bottom-cert">
+        <div class="date-block"><div class="date-line">${fmtCN($('certIssue').value)}</div><div>${fmtVN($('certIssue').value)}</div></div>
+        <div class="stamp"><img src="${stampFile}" alt="Đã đóng dấu" /></div>
+        <div class="sign">${sign()}<div class="sign-line"></div><div>教学总监</div><div>Giám đốc Học thuật</div><b>Vũ Minh Hiếu</b></div>
       </div>
     </div>`;
   }
