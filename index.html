@@ -45,6 +45,8 @@
     input,select,textarea{width:100%;border:1px solid rgba(141,0,13,.12);border-radius:15px;padding:11px 12px;font-size:14px;outline:none;background:rgba(255,255,255,.86);box-shadow:0 8px 18px rgba(132,0,12,.045);transition:border-color .16s,box-shadow .16s,background .16s}
     input:focus,select:focus,textarea:focus{border-color:rgba(200,0,26,.55);box-shadow:0 0 0 4px rgba(200,0,26,.1),0 12px 24px rgba(132,0,12,.08);background:#fff}
     textarea{min-height:150px;line-height:1.55;resize:vertical}
+
+    #inputForm #inputAdviceListen,#inputForm #inputAdviceRead,#inputForm #inputAdviceWrite{min-height:210px;font-size:12.5px;line-height:1.5}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .hidden{display:none!important}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.small{font-size:12px;padding:8px 10px}
     .slider-card{border:1px solid rgba(255,255,255,.74);border-radius:19px;padding:13px;margin-bottom:12px;background:rgba(255,255,255,.64);box-shadow:0 8px 22px rgba(132,0,12,.055)}
@@ -745,6 +747,59 @@
     }
     .input-report-169 .input-verdict b{color:var(--red)!important;}
 
+
+
+    /* V20 fix: keep conclusion and footer fully inside exported input report */
+    .input-report-169{
+      height:1120px!important;
+      padding:32px 52px 30px!important;
+      overflow:hidden!important;
+    }
+    .input-169-top{
+      flex:0 0 330px!important;
+      min-height:330px!important;
+      max-height:330px!important;
+      margin-bottom:16px!important;
+    }
+    .input-report-169 .chart-wrap.input-radar-wrap{
+      height:306px!important;
+    }
+    .input-report-169 .input-comment-list{
+      flex:0 0 320px!important;
+      min-height:320px!important;
+      max-height:320px!important;
+      margin:0 0 14px!important;
+    }
+    .input-report-169 .input-comment-item{
+      font-size:12.55px!important;
+      line-height:1.34!important;
+      padding:12px 14px!important;
+    }
+    .input-report-169 .input-verdict{
+      flex:0 0 108px!important;
+      min-height:108px!important;
+      max-height:108px!important;
+      font-size:15.4px!important;
+      line-height:1.38!important;
+      padding:18px 20px!important;
+      margin:0 0 14px!important;
+      overflow:hidden!important;
+    }
+    .input-report-169 .footer-contact.input-footer{
+      flex:0 0 58px!important;
+      min-height:58px!important;
+      max-height:58px!important;
+      margin:0!important;
+      padding-top:12px!important;
+      font-size:12px!important;
+      line-height:1.34!important;
+      overflow:visible!important;
+    }
+    .input-report-169 .footer-contact.input-footer strong{
+      font-size:15px!important;
+      line-height:1.2!important;
+      margin-bottom:4px!important;
+    }
 </style>
 </head>
 <body>
@@ -919,9 +974,23 @@
         <div id="inputAbilityPreview"></div>
       </div>
       <div class="card">
-        <div class="head"><div><h3><span class="section-num">5</span>Nhận xét và định hướng</h3></div></div>
+        <div class="head"><div><h3><span class="section-num">5</span>Nhận xét và định hướng</h3><p>Chia theo 3 kỹ năng. Bấm tạo để hệ thống tự viết nhận xét, sau đó giáo viên có thể sửa từng phần.</p></div></div>
         <div class="actions"><button id="btnAutoInput" class="small primary">✦ Tạo nhận xét tự động</button></div>
-        <label>Nội dung (có thể chỉnh sửa)</label><textarea id="inputAdvice"></textarea>
+        <div class="three">
+          <div>
+            <label>Kỹ năng Nghe</label>
+            <textarea id="inputAdviceListen" placeholder="Bấm tạo nhận xét tự động hoặc nhập nhận xét riêng cho kỹ năng Nghe..."></textarea>
+          </div>
+          <div>
+            <label>Kỹ năng Đọc</label>
+            <textarea id="inputAdviceRead" placeholder="Bấm tạo nhận xét tự động hoặc nhập nhận xét riêng cho kỹ năng Đọc..."></textarea>
+          </div>
+          <div>
+            <label>Kỹ năng Viết</label>
+            <textarea id="inputAdviceWrite" placeholder="Bấm tạo nhận xét tự động hoặc nhập nhận xét riêng cho kỹ năng Viết..."></textarea>
+          </div>
+        </div>
+        <textarea id="inputAdvice" class="hidden"></textarea>
       </div>
       <div class="card">
         <div class="head"><div><h3><span class="section-num">6</span>Kết luận đầu vào</h3><p>Hệ thống tự gợi ý theo điểm. Giáo viên có thể sửa lại trước khi xuất báo cáo.</p></div></div>
@@ -2001,7 +2070,8 @@
         const other=wrap.querySelector(`.input-task[data-skill="${el.dataset.skill}"][data-type="${opposite}"][value="${el.value}"]`);
         if(other) other.checked=false;
       }
-      if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice();
+      updateGeneratedInputRemarks(false);
+      syncInputConclusion(false);
       renderInputReport();
     }));
   }
@@ -2117,7 +2187,7 @@
     return `Nhận xét học viên: ${name}\nTổng điểm: ${sc.totalText}\n\n${comments.map(c=>`${c.label}: ${c.scoreText}: ${c.text}`).join('\n\n')}\n\nTổng kết: ${inputVerdictText(name,level,sc)}`;
   }
   function handleGenerateInput(){
-    if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice();
+    updateGeneratedInputRemarks(true);
     syncInputConclusion(true);
     renderInputReport();
   }
@@ -2141,7 +2211,7 @@
     const name=escapeHtml(rawName);
     const level=escapeHtml($('inputLevel')?.value || 'HSK3');
     const d=inputDecision(sc);
-    const comments=[inputSkillComment('listen',sc.listen,rawName,level,d), inputSkillComment('read',sc.read,rawName,level,d), inputSkillComment('write',sc.write,rawName,level,d)];
+    const comments=getInputSkillComments(rawName,level,sc,d);
     if($('inputAbilityPreview')) $('inputAbilityPreview').innerHTML=renderInputRadar(sc);
     const verdict=escapeHtml(getInputConclusionText(rawName||'học viên', level, sc));
     $('previewInput').innerHTML=`<div id="inputReport" class="input-report-169">
@@ -2172,11 +2242,11 @@
           ${renderInputRadar(sc)}
         </div>
       </div>
-      <div class="section-title input-comment-section-title">3. Nhận xét theo kỹ năng</div>
+      <div class="section-title input-comment-section-title">5. Nhận xét và định hướng</div>
       <div class="input-comment-list">
         ${comments.map(c=>`<div class="input-comment-item"><div class="input-comment-head"><span>${c.label}</span><span>${c.scoreText}</span></div>${c.text}</div>`).join('')}
       </div>
-      <div class="section-title input-conclusion-section-title">4. Kết luận đầu vào</div>
+      <div class="section-title input-conclusion-section-title">6. Kết luận đầu vào</div>
       <div class="input-verdict">${verdict}</div>
       <div class="footer-contact input-footer">
         <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
@@ -2235,6 +2305,48 @@
     return {label:labelMap[kind], scoreText:score.text, text:[intro,strongText,weakText,fit,action].filter(Boolean).join(' ')};
   }
 
+  function inputAdviceFieldId(kind){
+    return {listen:'inputAdviceListen',read:'inputAdviceRead',write:'inputAdviceWrite'}[kind];
+  }
+  function buildGeneratedInputComments(){
+    const name=$('inputName')?.value || 'học viên';
+    const level=$('inputLevel')?.value || 'HSK3';
+    const sc=updateInputTotal();
+    const d=inputDecision(sc);
+    return {
+      listen: inputSkillComment('listen',sc.listen,name,level,d),
+      read: inputSkillComment('read',sc.read,name,level,d),
+      write: inputSkillComment('write',sc.write,name,level,d)
+    };
+  }
+  function updateGeneratedInputRemarks(force=false){
+    const generated=buildGeneratedInputComments();
+    ['listen','read','write'].forEach(kind=>{
+      const el=$(inputAdviceFieldId(kind));
+      if(!el) return;
+      const next=generated[kind].text;
+      const previous=el.dataset.autoValue || '';
+      if(force || !el.value.trim() || el.value.trim()===previous.trim()){
+        el.value=next;
+        el.dataset.autoValue=next;
+      }
+    });
+    const legacy=$('inputAdvice');
+    if(legacy) legacy.value=generateInputAdvice();
+  }
+  function getInputSkillComments(rawName, level, sc, decision){
+    const generated={
+      listen: inputSkillComment('listen',sc.listen,rawName,level,decision),
+      read: inputSkillComment('read',sc.read,rawName,level,decision),
+      write: inputSkillComment('write',sc.write,rawName,level,decision)
+    };
+    return ['listen','read','write'].map(kind=>{
+      const el=$(inputAdviceFieldId(kind));
+      const manual=el && el.value.trim() ? el.value.trim() : generated[kind].text;
+      return {...generated[kind], text: manual};
+    });
+  }
+
   function renderInputRadar(sc){
     // Radar dùng trong báo cáo xuất ảnh. Bản này phóng lớn thật bằng cách giảm viewBox thừa,
     // không chỉ tăng CSS nên khi export JPG sẽ nhìn lớn hơn rõ rệt.
@@ -2259,7 +2371,7 @@
     const name=escapeHtml(rawName);
     const level=escapeHtml($('inputLevel')?.value || 'HSK3');
     const d=inputDecision(sc);
-    const comments=[inputSkillComment('listen',sc.listen,rawName,level,d), inputSkillComment('read',sc.read,rawName,level,d), inputSkillComment('write',sc.write,rawName,level,d)];
+    const comments=getInputSkillComments(rawName,level,sc,d);
     if($('inputAbilityPreview')) $('inputAbilityPreview').innerHTML=renderInputRadar(sc);
     const verdict=escapeHtml(getInputConclusionText(rawName||'học viên', level, sc));
     $('previewInput').innerHTML=`<div id="inputReport" class="input-report-169">
@@ -2290,11 +2402,11 @@
           ${renderInputRadar(sc)}
         </div>
       </div>
-      <div class="section-title input-comment-section-title">3. Nhận xét theo kỹ năng</div>
+      <div class="section-title input-comment-section-title">5. Nhận xét và định hướng</div>
       <div class="input-comment-list">
         ${comments.map(c=>`<div class="input-comment-item"><div class="input-comment-head"><span>${c.label}</span><span>${c.scoreText}</span></div>${escapeHtml(c.text)}</div>`).join('')}
       </div>
-      <div class="section-title input-conclusion-section-title">4. Kết luận đầu vào</div>
+      <div class="section-title input-conclusion-section-title">6. Kết luận đầu vào</div>
       <div class="input-verdict">${verdict}</div>
       <div class="footer-contact input-footer">
         <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
@@ -2376,7 +2488,7 @@
       'courseName','courseTeacher','courseClass','courseDob',
       'examListen','examRead','examWrite','examSpeak',
       'score1','score2','score3','courseAdvice','astrologyAdvice', 'showAstrology', 'showPassText',
-      'inputName','inputLevel','inputListen','inputRead','inputWrite','inputAdvice','inputConclusion'
+      'inputName','inputLevel','inputListen','inputRead','inputWrite','inputAdvice','inputAdviceListen','inputAdviceRead','inputAdviceWrite','inputConclusion'
     ];
     liveIds.forEach(id=>{
       const el=$(id); if(!el) return;
@@ -2386,8 +2498,8 @@
 
     ['inputName','inputLevel','inputListen','inputRead','inputWrite'].forEach(id=>{
       const el=$(id); if(!el) return;
-      el.addEventListener('input',()=>{ syncInputConclusion(false); renderInputReport(); });
-      el.addEventListener('change',()=>{ syncInputConclusion(false); renderInputReport(); });
+      el.addEventListener('input',()=>{ updateGeneratedInputRemarks(false); syncInputConclusion(false); renderInputReport(); });
+      el.addEventListener('change',()=>{ updateGeneratedInputRemarks(false); syncInputConclusion(false); renderInputReport(); });
     });
 
     $('courseCourse').addEventListener('change', () => { updateCourseUI(); });
@@ -2404,8 +2516,8 @@
     updateCourseUI();
     if(typeof renderInputTaskOptions==='function') renderInputTaskOptions();
     const inputLevelEl=$('inputLevel');
-    if(inputLevelEl) inputLevelEl.addEventListener('change',()=>{ renderInputTaskOptions(); if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice(); syncInputConclusion(false); renderAll(); });
-    if($('inputAdvice') && !$('inputAdvice').value) $('inputAdvice').value=generateInputAdvice();
+    if(inputLevelEl) inputLevelEl.addEventListener('change',()=>{ renderInputTaskOptions(); updateGeneratedInputRemarks(false); syncInputConclusion(false); renderAll(); });
+    updateGeneratedInputRemarks(false);
     syncInputConclusion(false);
     renderAll();
   }
