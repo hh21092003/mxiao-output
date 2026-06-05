@@ -720,6 +720,31 @@
       overflow:visible!important;
     }
 
+
+    /* V21: add input conclusion to exported JPG layout */
+    .input-conclusion-section-title{
+      margin:0 0 7px!important;
+      flex:0 0 auto!important;
+      line-height:1.2!important;
+    }
+    .input-report-169 .input-comment-list{
+      flex:0 0 306px!important;
+      min-height:306px!important;
+      max-height:306px!important;
+      margin:0 0 10px!important;
+    }
+    .input-report-169 .input-verdict{
+      flex:0 0 82px!important;
+      max-height:82px!important;
+      font-size:14px!important;
+      line-height:1.36!important;
+      padding:12px 15px!important;
+      margin:0 0 10px!important;
+      display:block!important;
+      overflow:hidden!important;
+    }
+    .input-report-169 .input-verdict b{color:var(--red)!important;}
+
 </style>
 </head>
 <body>
@@ -869,7 +894,7 @@
         <div class="head"><div><h2>Đánh giá bài kiểm tra đầu vào</h2></div><div class="badge">JPG 16:9</div></div>
         <h3 style="margin:4px 0 10px;color:var(--dark);font-size:15px"><span class="section-num">1</span>Trường thông tin</h3>
         <label>Họ và tên người kiểm tra</label><input id="inputName" value="" placeholder="VD: Nguyễn Kiều Anh" />
-        <label>Trình độ test</label>
+        <label>Lựa chọn trình độ test</label>
         <select id="inputLevel">
           <option value="HSK2">HSK2</option>
           <option value="HSK3" selected>HSK3</option>
@@ -896,11 +921,12 @@
       <div class="card">
         <div class="head"><div><h3><span class="section-num">5</span>Nhận xét và định hướng</h3></div></div>
         <div class="actions"><button id="btnAutoInput" class="small primary">✦ Tạo nhận xét tự động</button></div>
-        <label>Nội dung tổng hợp (tự động cập nhật để copy)</label><textarea id="inputAdvice"></textarea>
+        <label>Nội dung (có thể chỉnh sửa)</label><textarea id="inputAdvice"></textarea>
       </div>
       <div class="card">
-        <div class="head"><div><h3><span class="section-num">6</span>Kết luận đầu vào</h3><p>Giáo viên nhập nội dung xem học viên có nên học trình độ này hay không.</p></div></div>
-        <label>Nội dung (có thể chỉnh sửa)</label><textarea id="inputVerdictEdit" style="min-height: 80px;"></textarea>
+        <div class="head"><div><h3><span class="section-num">6</span>Kết luận đầu vào</h3><p>Hệ thống tự gợi ý theo điểm. Giáo viên có thể sửa lại trước khi xuất báo cáo.</p></div></div>
+        <label>Kết luận hiển thị trên báo cáo</label>
+        <textarea id="inputConclusion" placeholder="Hệ thống sẽ tự sinh kết luận theo tổng điểm và mức độ lệch giữa các kỹ năng. Giáo viên có thể chỉnh lại nội dung tại đây."></textarea>
         <div class="download-zone"><button id="btnDownloadInput" class="primary" style="width:100%">⬇ Xuất JPG báo cáo</button></div>
       </div>
     </section>
@@ -1194,7 +1220,7 @@
     skills:[
       {key:'reading',   label:'Kỹ năng đọc',   criteria:['Từ vựng - Ngữ pháp','Mặt chữ / Hán tự','Hiểu ý chính','Xử lý câu dài']},
       {key:'listening', label:'Kỹ năng nghe',  criteria:['Nhận diện âm','Từ khóa','Ý chính','Tốc độ']},
-      {key:'speaking',  label:'Kỹ năng nói',   criteria:['Phát âm','Thanh điệu','Tự tự tin','Phản xạ']},
+      {key:'speaking',  label:'Kỹ năng nói',   criteria:['Phát âm','Thanh điệu','Tự tin','Phản xạ']},
       {key:'writing',   label:'Kỹ năng viết',  criteria:['Viết đúng Hán tự','Cấu trúc câu','Diễn đạt logic','Áp dụng mẫu câu']}
     ],
     spirit:[
@@ -1360,4 +1386,1035 @@
     if(isNaN(d) || isNaN(m)) return null;
     
     if((m==3 && d>=21) || (m==4 && d<=19)) return 'Aries';
-    if((mTôi không thể giúp bạn việc đó, vì tôi chỉ là một mô hình ngôn ngữ nên không có thông tin hoặc khả năng cần thiết.
+    if((m==4 && d>=20) || (m==5 && d<=20)) return 'Taurus';
+    if((m==5 && d>=21) || (m==6 && d<=20)) return 'Gemini';
+    if((m==6 && d>=21) || (m==7 && d<=22)) return 'Cancer';
+    if((m==7 && d>=23) || (m==8 && d<=22)) return 'Leo';
+    if((m==8 && d>=23) || (m==9 && d<=22)) return 'Virgo';
+    if((m==9 && d>=23) || (m==10 && d<=22)) return 'Libra';
+    if((m==10 && d>=23) || (m==11 && d<=21)) return 'Scorpio';
+    if((m==11 && d>=22) || (m==12 && d<=21)) return 'Sagittarius';
+    if((m==12 && d>=22) || (m==1 && d<=19)) return 'Capricorn';
+    if((m==1 && d>=20) || (m==2 && d<=18)) return 'Aquarius';
+    if((m==2 && d>=19) || (m==3 && d<=20)) return 'Pisces';
+    return null;
+  }
+
+  /* ── Generate Auto Texts ── */
+  function handleGenerateStage() {
+    const name = $('stageName').value || 'Học viên';
+    const stageStr = $('stageLevel').value || 'chặng học';
+    const levelGroup = getStageLevelGroup(stageStr);
+    
+    const rows = DATA.skills.map(g => getGroup('stage', g));
+    const spirits = DATA.spirit.map(g => getGroup('stage_spirit', g));
+    
+    const avgTotal = avg(rows.map(x => x.average));
+    const lIdx = getLevelIndex(avgTotal);
+    
+    let p1 = STAGE_TEMPLATE[levelGroup].intro[lIdx];
+    p1 = p1.replace('{ten_hoc_vien}', name).replace('{chang_hoc}', stageStr);
+
+    let strengths = rows.filter(r => r.average >= 8.5);
+    let p2 = "";
+    if (strengths.length === 1) {
+      p2 = STRENGTH_TEMPLATES[levelGroup][1].replace('{ky_nang_manh_1}', strengths[0].label);
+    } else if (strengths.length === 2) {
+      p2 = STRENGTH_TEMPLATES[levelGroup][2].replace('{ky_nang_manh_1}', strengths[0].label).replace('{ky_nang_manh_2}', strengths[1].label);
+    } else if (strengths.length >= 3) {
+      const names = strengths.map(s => s.label).join(', ');
+      p2 = STRENGTH_TEMPLATES[levelGroup][3].replace('{danh_sach_ky_nang_manh}', names);
+    } else {
+      let maxS = rows.reduce((prev, current) => (prev.average > current.average) ? prev : current);
+      p2 = STRENGTH_TEMPLATES[levelGroup][0].replace('{ky_nang_manh_1}', maxS.label);
+    }
+
+    let weaknesses = rows.filter(r => r.average < 7.0);
+    weaknesses = sortWeaknesses(weaknesses);
+    let p3 = "";
+    let p3Action = "";
+    
+    if (weaknesses.length === 1) {
+      p3 = WEAKNESS_TEMPLATES[levelGroup][1].replace('{ky_nang_yeu_1}', weaknesses[0].label);
+      p3Action = ACTION_TEMPLATES[weaknesses[0].label];
+    } else if (weaknesses.length === 2) {
+      p3 = WEAKNESS_TEMPLATES[levelGroup][2].replace('{ky_nang_yeu_1}', weaknesses[0].label)
+                                            .replace('{ky_nang_yeu_2}', weaknesses[1].label)
+                                            .replace('{ky_nang_yeu_uu_tien}', weaknesses[0].label);
+      p3Action = ACTION_TEMPLATES[weaknesses[0].label];
+    } else if (weaknesses.length >= 3) {
+      const names = weaknesses.map(s => s.label).join(', ');
+      p3 = WEAKNESS_TEMPLATES[levelGroup][3].replace('{danh_sach_ky_nang_yeu}', names)
+                                            .replace('{ky_nang_yeu_uu_tien}', weaknesses[0].label);
+      p3Action = ACTION_TEMPLATES[weaknesses[0].label];
+    } else {
+      let minS = rows.reduce((prev, current) => (prev.average < current.average) ? prev : current);
+      p3 = WEAKNESS_TEMPLATES[levelGroup][0].replace('{ky_nang_yeu_1}', minS.label);
+      p3Action = ACTION_TEMPLATES[minS.label];
+    }
+
+    let p4 = "";
+    let weakSpirits = spirits.filter(r => r.average < 7.5);
+    if (weakSpirits.length > 0) {
+      let worstSpirit = weakSpirits.reduce((prev, current) => (prev.average < current.average) ? prev : current);
+      p4 = SPIRIT_TEMPLATES[worstSpirit.label];
+    }
+
+    let p5Key = lIdx >= 4 ? 'good' : lIdx === 3 ? 'fair' : 'poor';
+    let p5 = STAGE_TEMPLATE[levelGroup].conclusion[p5Key];
+
+    const finalResult = [p1, p2, p3, p3Action, p4, p5].filter(x => x && x.trim() !== "").join("\n\n");
+    $('stageAdvice').value = finalResult;
+    renderAll();
+  }
+
+  function handleGenerateCourse() {
+    const name = $('courseName').value || 'Học viên';
+    const courseStr = $('courseCourse').value;
+    const levelGroup = getCourseLevelGroup(courseStr);
+    
+    const rows = DATA.skills.map(g => getGroup('course', g));
+    const avgTotal = avg(rows.map(x => x.average));
+    const lIdx = getLevelIndex(avgTotal);
+
+    let activeScores = [];
+    if(!$('wrapScore1').classList.contains('hidden')) activeScores.push(Number($('score1').value||0));
+    if(!$('wrapScore2').classList.contains('hidden')) activeScores.push(Number($('score2').value||0));
+    if(!$('wrapScore3').classList.contains('hidden')) activeScores.push(Number($('score3').value||0));
+
+    let p1 = COURSE_INTRO[levelGroup][lIdx];
+    p1 = p1.replace('{ten_hoc_vien}', name).replace('{ten_khoa_hoc}', courseStr);
+
+    let p2 = "";
+    if (activeScores.length >= 2) {
+      let trendKey = getTrend(...activeScores, activeScores.length);
+      p2 = COURSE_TREND[trendKey];
+    }
+
+    let strengths = rows.filter(r => r.average >= 8.5);
+    let p3 = "";
+    if (strengths.length === 1) {
+      p3 = COURSE_STRENGTH[levelGroup][1].replace('{ky_nang_manh_1}', strengths[0].label);
+    } else if (strengths.length === 2) {
+      p3 = COURSE_STRENGTH[levelGroup][2].replace('{ky_nang_manh_1}', strengths[0].label).replace('{ky_nang_manh_2}', strengths[1].label);
+    } else if (strengths.length >= 3) {
+      const names = strengths.map(s => s.label).join(', ');
+      p3 = COURSE_STRENGTH[levelGroup][3].replace('{danh_sach_ky_nang_manh}', names);
+    } else {
+      let maxS = rows.reduce((prev, current) => (prev.average > current.average) ? prev : current);
+      p3 = COURSE_STRENGTH[levelGroup][0].replace('{ky_nang_manh_1}', maxS.label);
+    }
+
+    let weaknesses = rows.filter(r => r.average < 7.0);
+    weaknesses = sortWeaknesses(weaknesses);
+    let p4 = "";
+    if (weaknesses.length === 1) {
+      p4 = COURSE_WEAKNESS[levelGroup][1].replace('{ky_nang_yeu_1}', weaknesses[0].label);
+    } else if (weaknesses.length === 2) {
+      p4 = COURSE_WEAKNESS[levelGroup][2].replace('{ky_nang_yeu_1}', weaknesses[0].label)
+                                         .replace('{ky_nang_yeu_2}', weaknesses[1].label)
+                                         .replace('{ky_nang_yeu_uu_tien}', weaknesses[0].label);
+    } else if (weaknesses.length >= 3) {
+      const names = weaknesses.map(s => s.label).join(', ');
+      p4 = COURSE_WEAKNESS[levelGroup][3].replace('{danh_sach_ky_nang_yeu}', names)
+                                         .replace('{ky_nang_yeu_uu_tien}', weaknesses[0].label);
+    } else {
+      let minS = rows.reduce((prev, current) => (prev.average < current.average) ? prev : current);
+      p4 = COURSE_WEAKNESS[levelGroup][0].replace('{ky_nang_yeu_1}', minS.label);
+    }
+
+    let p5Key = lIdx >= 4 ? 'good' : lIdx === 3 ? 'fair' : 'poor';
+    let p5 = COURSE_ROUTE[levelGroup][p5Key];
+
+    let p6 = COURSE_CONCLUSION[levelGroup];
+
+    const finalResult = [p1, p2, p3, p4, p5, p6].filter(x => x && x.trim() !== "").join("\n\n");
+    $('courseAdvice').value = finalResult;
+    renderAll();
+  }
+
+  function handleGenerateAstro() {
+    const dob = $('courseDob').value;
+    const name = $('courseName').value || 'Học viên';
+    const signKey = parseZodiac(dob);
+    
+    if (!signKey || !ASTRO_DATA[signKey]) {
+      alert("Vui lòng nhập đúng định dạng ngày sinh dd/mm/yyyy (VD: 21/01/2003) để MXiao phân tích cung hoàng đạo.");
+      return;
+    }
+    
+    let text = ASTRO_DATA[signKey].text.replace('{ten_hoc_vien}', name);
+    $('astrologyAdvice').value = text;
+    renderAll();
+  }
+
+  /* ── Dynamic Course UI Updates ── */
+  function updateCourseUI() {
+    const c = $('courseCourse').value;
+    
+    $('wrapScore1').classList.remove('hidden');
+    $('wrapScore2').classList.remove('hidden');
+    $('wrapScore3').classList.remove('hidden');
+    $('formSection3').classList.remove('hidden');
+
+    if (c === 'Khóa Vỡ lòng (0-HSK2)') {
+      $('formSection2Title').innerHTML = '<span class="section-num">2</span>NHẬN XÉT CHẶNG HSK2';
+      $('lblScore1').innerText = 'HSK1'; $('lblScore2').innerText = 'HSK2';
+      $('wrapScore3').classList.add('hidden');
+    } 
+    else if (c === 'Khóa Cơ bản (HSK3)') {
+      $('formSection2Title').innerHTML = '<span class="section-num">2</span>NHẬN XÉT TOÀN KHÓA';
+      $('formSection3').classList.add('hidden');
+    }
+    else if (c === 'Khóa Sơ cấp (0-HSK3)') {
+      $('formSection2Title').innerHTML = '<span class="section-num">2</span>NHẬN XÉT CHẶNG HSK3';
+      $('lblScore1').innerText = 'HSK1'; $('lblScore2').innerText = 'HSK2'; $('lblScore3').innerText = 'HSK3';
+    }
+    else if (c === 'Khóa Nâng cao (HSK4)') {
+      $('formSection2Title').innerHTML = '<span class="section-num">2</span>NHẬN XÉT CHẶNG HSK4 (HẠ)';
+      $('lblScore1').innerText = 'HSK4 (Thượng)'; $('lblScore2').innerText = 'HSK4 (Hạ)';
+      $('wrapScore3').classList.add('hidden');
+    }
+    else if (c === 'Khóa Thành thạo (HSK5)') {
+      $('formSection2Title').innerHTML = '<span class="section-num">2</span>NHẬN XÉT CHẶNG HSK5 (HẠ)';
+      $('lblScore1').innerText = 'HSK5 (Thượng)'; $('lblScore2').innerText = 'HSK5 (Hạ)';
+      $('wrapScore3').classList.add('hidden');
+    }
+    renderAll();
+  }
+
+  /* ── Render PDFs ── */
+  function skillSentence(g) {
+    const strong=g.criteria.filter((c,i)=>g.scores[i]>=8.5).map(x=>x.toLowerCase());
+    const wk=g.criteria.filter((c,i)=>g.scores[i]<7.5).map(x=>x.toLowerCase());
+    let t=`${g.label} đạt mức ${level(g.average)}.`;
+    if(strong.length) t+=` Điểm nổi bật là ${strong.slice(0,2).join(', ')}.`;
+    if(wk.length) t+=` Cần củng cố thêm ${wk.slice(0,2).join(', ')}.`;
+    return t;
+  }
+  function spiritSentence(g) {
+    const strong=g.criteria.filter((c,i)=>g.scores[i]>=8.5).map(x=>x.toLowerCase());
+    const wk=g.criteria.filter((c,i)=>g.scores[i]<7.5).map(x=>x.toLowerCase());
+    let t=`${g.label} ở mức ${level(g.average)}.`;
+    if(strong.length) t+=` Học viên thể hiện tốt ở ${strong.slice(0,2).join(', ')}.`;
+    if(wk.length) t+=` Cần cải thiện thêm ${wk.slice(0,2).join(', ')}.`;
+    return t;
+  }
+
+  function renderCertificate() {
+    document.querySelectorAll('.completion-only').forEach(e=>e.classList.toggle('hidden',$('certType').value==='topStudent'));
+    $('certType').value==='topStudent'?renderTopCert():renderEndCert();
+  }
+  function renderEndCert() {
+    const c=$('certCourse').value;
+       let stampFile = 'assets/H2.png';
+    if (c.includes('HSK3')) stampFile = 'assets/H3.png';
+    else if (c.includes('HSK4')) stampFile = 'assets/H4.png';
+    else if (c.includes('HSK5')) stampFile = 'assets/H5.png';
+    $('previewCert').innerHTML=`<div id="certificate" class="cert">
+      <div class="border-a"></div><div class="border-b"></div><div class="border-c"></div>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div class="cert-inner">
+        <div class="logo">${logo()}</div>
+        <div class="title-grid">
+          <div><div class="vn-title">CHỨNG NHẬN</div><div class="vn-sub">HOÀN THÀNH KHÓA HỌC</div></div>
+          <div class="cn-title">课程结业证书</div>
+        </div>
+        <div class="info-grid">
+          <div>
+            <div class="field-line"><div>Học viên:</div><div class="value">${$('certName').value}</div></div>
+            <div class="field-line"><div>Sinh ngày:</div><div class="value">${$('certDob').value}</div></div>
+            <div class="field-line"><div>Lớp:</div><div class="value">${$('certClass').value}</div></div>
+          </div>
+          <div>
+            <div class="field-line"><div>学员姓名:</div><div class="value">${$('certName').value}</div></div>
+            <div class="field-line"><div>出生日期:</div><div class="value">${$('certDob').value}</div></div>
+            <div class="field-line"><div>班级:</div><div class="value">${$('certClass').value}</div></div>
+          </div>
+        </div>
+        <div class="center-text">Đã hoàn thành <b>${c}</b><br>Thời gian đào tạo: <span class="underline">${$('certStart').value} - ${$('certEnd').value}</span><br>Đầu ra đạt chuẩn: ${courseOutputs[c]||''}</div>
+      </div>
+      <div class="bottom-cert">
+        <div class="date-block"><div class="date-line">${fmtCN($('certIssue').value)}</div><div>${fmtVN($('certIssue').value)}</div></div>
+        <div class="stamp"><img src="${stampFile}" alt="Đã đóng dấu" /></div>
+        <div class="sign">${sign()}<div class="sign-line"></div><div>教学总监</div><div>Giám đốc Học thuật</div><b>Vũ Minh Hiếu</b></div>
+      </div>
+    </div>`;
+  }
+  function renderTopCert() {
+    const c=$('certCourse').value;
+    $('previewCert').innerHTML=`<div id="certificate" class="cert top-cert">
+      <div class="top-red-frame"></div><div class="top-inner-frame"></div><div class="top-pattern"></div>
+      <div class="cert-inner top-inner">
+        <div class="logo">${logo()}</div>
+        <div class="top-main">GIẤY CHỨNG NHẬN</div>
+        <div class="top-sub">THỦ KHOA ĐẦU RA</div>
+        <div class="top-name">${$('certName').value}</div>
+        <div class="top-class">Học viên lớp ${$('certClass').value}</div>
+        <div class="top-body">Đã hoàn thành xuất sắc ${c}<br>tại MXiao Chinese và đạt danh hiệu <b>Thủ Khoa Đầu ra</b></div>
+        <div class="top-bottom">
+          <div class="date-block"><div class="date-line">${fmtCN($('certIssue').value)}</div><div>${fmtVN($('certIssue').value)}</div></div>
+          <div class="sign top-sign">${sign()}<div class="sign-line"></div><div>Giám đốc Học thuật</div><b>Vũ Minh Hiếu</b></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderStageReport() {
+    const rows=DATA.skills.map(g=>getGroup('stage',g));
+    const spirit=DATA.spirit.map(g=>getGroup('stage_spirit',g));
+    const a=avg(rows.map(x=>x.average));
+    $('previewStage').innerHTML=`<div id="stageReport" class="report">
+      <div class="report-header">
+        <div class="report-logo-wrap">${reportLogo()}</div>
+        <div class="report-heading">
+          <div class="rh-main">ĐÁNH GIÁ HỌC VIÊN THEO CHẶNG</div>
+          <div class="rh-sub">${$('stageCourse').value.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="meta-row">
+        <span><b>Họ và tên:</b> ${$('stageName').value}</span>
+        <span><b>Mã lớp:</b> ${$('stageClass').value}</span>
+        <span><b>Giảng viên:</b> ${$('stageTeacher').value}</span>
+        <span><b>Chặng học:</b> ${$('stageLevel').value}</span>
+      </div>
+      <hr class="meta-divider">
+
+      <div class="section-title">1. Đánh giá theo chặng</div>
+      <table><tr><th>Bài thi</th><th>Tổng điểm</th><th>Nói</th></tr>
+      <tr><td style="text-align:center">Kết quả</td><td class="score">${$('stageExam').value}</td><td class="score">${$('stageSpeakingPass').value}</td></tr></table>
+
+      <table>
+        <tr><th>Kỹ năng</th><th>Nhận xét chi tiết</th><th>Điểm TB</th></tr>
+        ${rows.map(r=>`<tr><td class="skill-name">${r.label.toUpperCase()}</td><td>${skillSentence(r)}</td><td class="score">${r.average.toFixed(1)}/10</td></tr>`).join('')}
+        <tr class="total-row"><td colspan="2">ĐIỂM TRUNG BÌNH</td><td>${a.toFixed(1)}/10</td></tr>
+      </table>
+
+      ${renderRadarChart(DATA.skills,'stage')}
+
+      <div class="section-title">2. Tinh thần học tập</div>
+      <table>
+        <tr><th>Hạng mục</th><th>Nhận xét</th></tr>
+        ${spirit.map(r=>`<tr><td class="skill-name">${r.label.toUpperCase()}</td><td>${spiritSentence(r)}</td></tr>`).join('')}
+      </table>
+
+      <div class="section-title">3. Tỉ lệ đi học / nộp bài</div>
+      <table>
+        <tr><th>Hạng mục</th><th>Tỉ lệ</th><th>Ghi chú</th></tr>
+        <tr><td>Tỉ lệ đi học</td><td class="score">${pct($('attendReal').value,$('attendNeed').value)}</td><td>${$('attendReal').value}/${$('attendNeed').value} buổi</td></tr>
+        <tr><td>Tỉ lệ nộp bài tập</td><td class="score">${pct($('homeworkReal').value,$('homeworkNeed').value)}</td><td>${$('homeworkReal').value}/${$('homeworkNeed').value} bài</td></tr>
+      </table>
+
+      <div class="section-title">4. Định hướng và lời khuyên từ giáo viên</div>
+      <div class="advice">${$('stageAdvice').value||'<em style="color:#aaa">Chưa có nội dung (Nhấn tạo tự động bên trái)</em>'}</div>
+      
+      <div class="footer-contact" style="margin-top: 50px;">
+        <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
+        Fanpage: MXiao Chinese - Tiếng Trung MXiao<br>
+        Email: info@mxiao.edu.vn
+      </div>
+    </div>`;
+  }
+
+  function renderCourseReport() {
+    const c = $('courseCourse').value;
+    const rows=DATA.skills.map(g=>getGroup('course',g));
+    const a=avg(rows.map(x=>x.average));
+    
+    let sec2Title = "2. Nhận xét";
+    if (c === 'Khóa Vỡ lòng (0-HSK2)') sec2Title = "2. Nhận xét chặng HSK2";
+    else if (c === 'Khóa Cơ bản (HSK3)') sec2Title = "2. Nhận xét toàn khóa";
+    else if (c === 'Khóa Sơ cấp (0-HSK3)') sec2Title = "2. Nhận xét chặng HSK3";
+    else if (c === 'Khóa Nâng cao (HSK4)') sec2Title = "2. Nhận xét chặng HSK4 (Hạ)";
+    else if (c === 'Khóa Thành thạo (HSK5)') sec2Title = "2. Nhận xét chặng HSK5 (Hạ)";
+
+    let activeScores = [];
+    let headers = [];
+    if(!$('wrapScore1').classList.contains('hidden')) { activeScores.push(Number($('score1').value||0)); headers.push($('lblScore1').innerText); }
+    if(!$('wrapScore2').classList.contains('hidden')) { activeScores.push(Number($('score2').value||0)); headers.push($('lblScore2').innerText); }
+    if(!$('wrapScore3').classList.contains('hidden')) { activeScores.push(Number($('score3').value||0)); headers.push($('lblScore3').innerText); }
+    
+    const fa = avg(activeScores);
+
+    let section3HTML = "";
+    if (c !== 'Khóa Cơ bản (HSK3)') {
+      let ths = headers.map(h => `<th>${h}</th>`).join('');
+      let tds = activeScores.map(s => `<td class="score">${s.toFixed(1)}</td>`).join('');
+      
+      let outReq = courseOutputs[c]||'khóa học';
+      let reqMsg = c.includes('HSK3') ? 'HSK 3 và HSKK Sơ cấp' : outReq;
+      let passTextHTML = $('showPassText').checked ? `<p style="margin-bottom:0"><b>Học viên ĐẠT điều kiện kiến thức đầu ra ${reqMsg}.</b></p>` : "";
+
+      section3HTML = `
+        <div class="section-title">3. Tổng kết quá trình học</div>
+        <table>
+          <tr><th>Chặng</th>${ths}<th>Tổng kết</th></tr>
+          <tr><td style="font-weight:700;text-align:center">Điểm</td>${tds}<td class="score">${fa.toFixed(1)}/10</td></tr>
+        </table>
+        ${passTextHTML}
+      `;
+    }
+
+    let adviceNum = c === 'Khóa Cơ bản (HSK3)' ? "3" : "4";
+    let astroNum = c === 'Khóa Cơ bản (HSK3)' ? "4" : "5";
+
+    const showAstro = $('showAstrology').checked;
+    const astroContent = $('astrologyAdvice').value;
+    const astroPart = showAstro ? `
+      <div class="section-title">${astroNum}. Lời khuyên từ MXiao</div>
+      ${astroContent
+        ? `<div class="astro-block">${astroContent.replace(/\n/g,'<br>')}</div>`
+        : `<div class="astro-block"><div class="astro-empty">Chưa có nội dung — Nhấn "Tạo lời khuyên Cung hoàng đạo" ở bên trái.</div></div>`
+      }` : "";
+
+    const offerText = OFFERS[c] || "";
+    const offerPart = offerText ? `
+      <div class="footer-offers">
+        <div class="offer-box">
+          <div class="offer-title">🎁 QUÀ TẶNG VÀ ƯU ĐÃI TỪ MXIAO</div>
+          <ul class="offer-list">
+            <li><b>Chinh phục HSK:</b> MXiao khuyến khích bạn sớm tham gia kỳ thi HSK. Nếu <b>thi đạt chứng chỉ HSK</b>, hãy gửi bảng điểm về cho Giáo viên để được MXiao <b>thưởng tiền mặt và nhận nhiều phần quà hấp dẫn!</b></li>
+            <li><b>Ưu đãi học lên:</b> Tặng đặc quyền giảm học phí khóa tiếp theo dành riêng cho học viên cũ: <span class="highlight">${offerText}</span></li>
+          </ul>
+        </div>
+      </div>
+    ` : "";
+
+    $('previewCourse').innerHTML=`<div id="courseReport" class="report">
+      <div class="report-header">
+        <div class="report-logo-wrap">${reportLogo()}</div>
+        <div class="report-heading">
+          <div class="rh-main">BÁO CÁO ĐÁNH GIÁ HỌC VIÊN</div>
+          <div class="rh-sub">${c.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="meta-row">
+        <span><b>Họ và tên:</b> ${$('courseName').value}</span>
+        <span><b>Mã lớp:</b> ${$('courseClass').value}</span>
+        <span><b>Giảng viên:</b> ${$('courseTeacher').value}</span>
+      </div>
+      <hr class="meta-divider">
+
+      <div class="section-title">1. Kết quả quá trình học</div>
+      <p style="font-weight:700;font-size:13px;margin:4px 0 6px">Bảng điểm thi kết thúc khóa</p>
+      <table>
+        <tr><th>Bài thi</th><th>Nghe</th><th>Đọc</th><th>Viết</th><th>Nói</th></tr>
+        <tr><td style="text-align:center;font-weight:700">Điểm</td><td class="score">${$('examListen').value}</td><td class="score">${$('examRead').value}</td><td class="score">${$('examWrite').value}</td><td class="score">${$('examSpeak').value}</td></tr>
+      </table>
+
+      <div class="section-title">${sec2Title}</div>
+      <table>
+        <tr><th>Kỹ năng</th><th>Nhận xét chi tiết</th><th>Điểm</th></tr>
+        ${rows.map(r=>`<tr><td class="skill-name">${r.label.toUpperCase()}</td><td>${skillSentence(r)}</td><td class="score">${r.average.toFixed(1)}/10</td></tr>`).join('')}
+        <tr class="total-row"><td colspan="2">TRUNG BÌNH ĐÁNH GIÁ</td><td>${a.toFixed(1)}/10</td></tr>
+      </table>
+
+      ${renderRadarChart(DATA.skills,'course')}
+
+      ${section3HTML}
+
+      <div class="section-title">${adviceNum}. Định hướng sau khóa học</div>
+      <div class="advice">${$('courseAdvice').value||'<em style="color:#aaa">Chưa có nội dung (Nhấn tạo tự động bên trái)</em>'}</div>
+
+      ${astroPart}
+
+      <div class="section-title" style="margin-top: 25px;">Lời cảm ơn</div>
+      <p style="text-align: justify">Cảm ơn bạn đã đồng hành cùng MXiao Chinese đến những buổi học cuối cùng trên con đường chinh phục tiếng Trung đầy thử thách này!</p>
+      <p style="text-align: justify">Trong suốt khóa học, MXiao Chinese tin rằng bạn đã dành rất nhiều nỗ lực và đã có những tiến bộ lớn. Việc kết thúc khóa học không đồng nghĩa với việc kết thúc quá trình học tập — hãy tiếp tục duy trì thói quen học tiếng Trung mỗi ngày để những gì đã đạt được không phai nhạt.</p>
+      <p style="text-align: justify">Chúc bạn luôn giữ được đam mê và tiếp tục tiến bộ trên con đường học tiếng Trung!</p>
+
+      ${offerPart}
+
+      <div class="footer-contact">
+        <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
+        Fanpage: MXiao Chinese - Tiếng Trung MXiao | Email: info@mxiao.edu.vn
+      </div>
+    </div>`;
+  }
+
+  function renderAll() { updatePills(); renderCertificate(); renderStageReport(); renderCourseReport(); if(typeof renderInputReport==='function') renderInputReport(); }
+
+  /* ── Tab switching ── */
+  function switchMode(next) {
+    const titles={cert:['Chứng nhận','PNG'],stage:['Đánh giá theo chặng','PDF'],course:['Đánh giá cả khóa','PDF'],input:['Đánh giá đầu vào','JPG']};
+    if(!titles[next]) return;
+    $('previewTitle').textContent=titles[next][0];
+    $('previewMeta').textContent=titles[next][1];
+    ['Cert','Stage','Course','Input'].forEach(n=>{ const el=$('tab'+n); if(el) el.classList.remove('active'); });
+    const tab=$('tab'+next.charAt(0).toUpperCase()+next.slice(1)); if(tab) tab.classList.add('active');
+    ['cert','stage','course','input'].forEach(k=>{
+      const form=$(`${k}Form`), preview=$(`preview${k.charAt(0).toUpperCase()+k.slice(1)}`);
+      if(form) form.classList.toggle('hidden',k!==next);
+      if(preview) preview.classList.toggle('hidden',k!==next);
+    });
+    try{renderAll();}catch(e){console.error(e);}
+  }
+
+
+  /* ── Input placement report ── */
+  function escapeHtml(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+  function firstName(full){
+    const raw=String(full||'').trim();
+    if(!raw) return 'Học viên';
+    const normalized=raw.toLowerCase().replace(/\s+/g,' ');
+    if(normalized==='học viên' || normalized==='hoc vien') return 'Học viên';
+    const parts=raw.split(/\s+/).filter(Boolean);
+    return parts.length ? parts[parts.length-1] : 'Học viên';
+  }
+
+  const INPUT_TASKS = {
+    listen: [
+      {
+        key:'listen_picture',
+        label:'Nghe và chọn bức ảnh phù hợp',
+        levels:['HSK2','HSK3'],
+        strong:'xử lý tốt dạng nghe chọn ảnh, nhận ra được từ khóa miêu tả người, sự vật, hành động và bối cảnh trong tranh',
+        weak:'cần luyện thêm dạng nghe chọn ảnh, đặc biệt là bắt từ khóa miêu tả hành động, vị trí và đặc điểm của sự vật trong tranh'
+      },
+      {
+        key:'listen_dialogue',
+        label:'Nghe đoạn hội thoại và trả lời câu hỏi',
+        levels:['HSK2','HSK3','HSK4','HSK5'],
+        strong:'theo dõi được hội thoại, xác định đúng người nói, ý chính và thông tin cần dùng để trả lời câu hỏi',
+        weak:'cần luyện thêm dạng nghe hội thoại, vì còn dễ nhầm giữa thông tin chính, thông tin phụ và chi tiết gây nhiễu'
+      },
+      {
+        key:'listen_passage',
+        label:'Nghe bài văn và trả lời câu hỏi',
+        levels:['HSK4','HSK5'],
+        strong:'theo được bài nghe dài hơn, giữ được mạch thông tin và nhận ra quan hệ cơ bản giữa các ý trong bài',
+        weak:'cần luyện thêm dạng nghe bài văn, nhất là ghi nhớ thông tin theo chuỗi và nhận diện quan hệ nguyên nhân, kết quả, thái độ hoặc mục đích nói'
+      }
+    ],
+    read: [
+      {
+        key:'read_fill_sentence',
+        label:'Điền từ vào câu',
+        levels:['HSK2','HSK3','HSK4'],
+        strong:'chọn từ khá đúng theo ngữ cảnh câu, hiểu được quan hệ giữa nghĩa từ, vị trí từ và cấu trúc ngữ pháp',
+        weak:'cần ôn thêm dạng điền từ vào câu, nhất là nhóm từ gần nghĩa, phó từ, liên từ và động từ thường đi với cấu trúc cố định'
+      },
+      {
+        key:'read_match_dialogue',
+        label:'Nối câu để tạo thành đoạn hội thoại',
+        levels:['HSK2','HSK3'],
+        strong:'nhận ra được logic hỏi đáp và nối các lượt lời thành hội thoại hợp lý',
+        weak:'cần luyện thêm dạng nối câu hội thoại, vì còn có xu hướng nối theo nghĩa bề mặt mà chưa xét đủ ngữ cảnh giao tiếp'
+      },
+      {
+        key:'read_question',
+        label:'Đọc hiểu và trả lời câu hỏi',
+        levels:['HSK2','HSK3','HSK4','HSK5'],
+        strong:'đọc hiểu được ý chính, định vị thông tin cần thiết và xử lý khá tốt câu hỏi bám theo văn bản',
+        weak:'cần luyện thêm dạng đọc hiểu trả lời câu hỏi, đặc biệt là gạch từ khóa và đối chiếu đáp án với văn bản để tránh chọn theo cảm giác'
+      },
+      {
+        key:'read_cloze_3_blanks',
+        label:'Đọc bài văn và chọn đáp án điền vào 3 chỗ trống',
+        levels:['HSK4','HSK5'],
+        strong:'biết dựa vào mạch văn, quan hệ câu trước - câu sau và sắc thái nghĩa để chọn vế câu hoặc từ phù hợp',
+        weak:'cần luyện thêm dạng điền khuyết trong bài văn, vì dạng này yêu cầu hiểu mạch câu chứ không chỉ hiểu nghĩa từng từ riêng lẻ'
+      },
+      {
+        key:'read_long_fill_word',
+        label:'Đọc bài văn và điền từ',
+        levels:['HSK5'],
+        strong:'có vốn từ và khả năng chọn từ khá tốt khi từ được đặt trong văn cảnh dài',
+        weak:'cần củng cố vốn từ HSK5 và cách chọn từ theo văn cảnh dài, vì dạng này kiểm tra đồng thời nghĩa từ, sắc thái dùng và mạch triển khai của bài'
+      },
+      {
+        key:'read_paragraph_order',
+        label:'Sắp xếp các đoạn văn tách rời thành bài hoàn chỉnh',
+        levels:['HSK5'],
+        strong:'nhận diện được trật tự triển khai ý, câu mở đầu, câu chuyển ý và quan hệ logic giữa các đoạn văn',
+        weak:'cần luyện thêm dạng sắp xếp đoạn văn, đặc biệt là nhận diện câu mở đầu, câu chuyển ý, quan hệ nguyên nhân - kết quả, tương phản và trình tự triển khai'
+      }
+    ],
+    write: [
+      {
+        key:'write_order_sentence',
+        label:'Sắp xếp câu',
+        levels:['HSK2','HSK3'],
+        strong:'nắm khá chắc trật tự thành phần câu cơ bản trong tiếng Trung, đặc biệt là chủ ngữ, vị ngữ, tân ngữ và trạng ngữ quen thuộc',
+        weak:'cần ôn thêm dạng sắp xếp câu, nhất là vị trí trạng ngữ, bổ ngữ, cụm thời gian và cách đặt cụm từ trong câu'
+      },
+      {
+        key:'write_translate',
+        label:'Dịch',
+        levels:['HSK2','HSK3'],
+        strong:'chuyển ý từ tiếng Việt sang tiếng Trung khá ổn ở các mẫu câu quen thuộc, giữ được ý chính và trật tự câu tương đối đúng',
+        weak:'cần luyện thêm dạng dịch câu, vì còn dễ bám theo trật tự tiếng Việt hoặc chọn từ chưa đúng sắc thái tiếng Trung'
+      },
+      {
+        key:'write_picture_sentence',
+        label:'Đặt câu theo ảnh',
+        levels:['HSK3','HSK4'],
+        strong:'biết quan sát hình ảnh và chuyển thông tin nhìn thấy thành câu tiếng Trung tương đối rõ ý',
+        weak:'cần luyện thêm dạng đặt câu theo ảnh, tập trung vào chủ ngữ, động từ chính, từ chỉ vị trí và thông tin bổ sung trong câu'
+      },
+      {
+        key:'write_topic_paragraph',
+        label:'Viết đoạn văn về một chủ đề',
+        levels:['HSK4'],
+        strong:'có khả năng triển khai đoạn văn 80-100 chữ theo chủ đề, giữ được ý chính và bước đầu biết liên kết các câu trong đoạn',
+        weak:'cần luyện thêm dạng viết đoạn văn 80-100 chữ, tập trung vào bố cục, liên kết câu, độ chính xác của từ vựng và ngữ pháp'
+      },
+      {
+        key:'write_picture_story',
+        label:'Nhìn 4 bức ảnh và kể một câu chuyện trên 100 chữ',
+        levels:['HSK5'],
+        strong:'có khả năng nối các hình ảnh thành một mạch kể chuyện tương đối liền mạch, có trình tự và điểm kết nối giữa các sự kiện',
+        weak:'cần luyện thêm dạng kể chuyện theo chuỗi ảnh, nhất là trình tự thời gian, quan hệ nhân quả và cách dùng từ nối sự kiện'
+      },
+      {
+        key:'write_social_argument',
+        label:'Nghị luận xã hội theo chủ đề trên 200 chữ',
+        levels:['HSK5'],
+        strong:'bước đầu biết triển khai quan điểm, lý do và ví dụ trong bài viết nghị luận xã hội',
+        weak:'cần luyện thêm dạng nghị luận xã hội, đặc biệt là cách nêu luận điểm, phân tích lý do, đưa ví dụ và kết đoạn rõ ràng'
+      }
+    ]
+  };
+  function skillVN(k){return {listen:'Nghe',read:'Đọc',write:'Viết'}[k]||k;}
+  function visibleInputTasks(skill){
+    const level=$('inputLevel')?.value || 'HSK3';
+    return (INPUT_TASKS[skill]||[]).filter(t=>t.levels.includes(level));
+  }
+  function renderInputTaskOptions(){
+    const wrap=$('inputTaskOptions');
+    if(!wrap) return;
+    const html=['listen','read','write'].map(skill=>{
+      const tasks=visibleInputTasks(skill);
+      const rows=tasks.map(t=>`<tr>
+        <td class="task-name">${t.label}</td>
+        <td><label class="task-tick"><input type="checkbox" class="input-task" data-skill="${skill}" data-type="strong" value="${t.key}"><span>Điểm mạnh</span></label></td>
+        <td><label class="task-tick"><input type="checkbox" class="input-task" data-skill="${skill}" data-type="weak" value="${t.key}"><span>Điểm yếu</span></label></td>
+      </tr>`).join('') || `<tr><td colspan="3" class="task-empty">Không có dạng bài tương ứng ở trình độ này.</td></tr>`;
+      return `<div class="task-skill-card"><div class="task-skill-title"><span class="section-num">${skill==='listen'?'N':skill==='read'?'Đ':'V'}</span>Kỹ năng ${skillVN(skill)}</div>
+        <table class="task-matrix"><thead><tr><th>Dạng bài</th><th>Mạnh</th><th>Yếu</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+    }).join('');
+    wrap.innerHTML=html;
+    wrap.querySelectorAll('.input-task').forEach(el=>el.addEventListener('change',()=>{
+      if(el.checked){
+        const opposite=el.dataset.type==='strong'?'weak':'strong';
+        const other=wrap.querySelector(`.input-task[data-skill="${el.dataset.skill}"][data-type="${opposite}"][value="${el.value}"]`);
+        if(other) other.checked=false;
+      }
+      if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice();
+      renderInputReport();
+    }));
+  }
+  function selectedInputTasks(skill,type){
+    return Array.from(document.querySelectorAll(`.input-task[data-skill="${skill}"][data-type="${type}"]:checked`)).map(el=>el.value);
+  }
+  function taskText(skill,type){
+    const keys=selectedInputTasks(skill,type);
+    const all=INPUT_TASKS[skill]||[];
+    return keys.map(k=>all.find(t=>t.key===k)).filter(Boolean).map(t=>t[type]);
+  }
+  function joinNatural(arr){
+    if(!arr.length) return '';
+    if(arr.length===1) return arr[0];
+    return arr.slice(0,-1).join('; ') + '; ' + arr[arr.length-1];
+  }
+
+  function parseFraction(v){
+    const m=String(v||'').trim().match(/^(\d+(?:[\.,]\d+)?)\s*\/\s*(\d+(?:[\.,]\d+)?)$/);
+    if(!m) return {x:0,y:0,ratio:0,valid:false,text:escapeHtml(v||'0/0')};
+    const x=Number(m[1].replace(',','.'));
+    const y=Number(m[2].replace(',','.'));
+    const ratio=y>0?Math.max(0,Math.min(1,x/y)):0;
+    return {x,y,ratio,valid:y>0,text:`${x}/${y}`};
+  }
+  function inputScores(){
+    const listen=parseFraction($('inputListen')?.value);
+    const read=parseFraction($('inputRead')?.value);
+    const write=parseFraction($('inputWrite')?.value);
+    const totalX=listen.x+read.x+write.x;
+    const totalY=listen.y+read.y+write.y;
+    return {listen,read,write,totalX,totalY,totalText:`${totalX}/${totalY||0}`,totalRatio:totalY?totalX/totalY:0};
+  }
+  function updateInputTotal(){
+    const sc=inputScores();
+    if($('inputTotal')) $('inputTotal').value=sc.totalText;
+    return sc;
+  }
+  function inputBand(r){
+    if(r>=0.9) return 'excellent';
+    if(r>=0.8) return 'good';
+    if(r>=0.65) return 'medium';
+    if(r>=0.5) return 'weak';
+    return 'poor';
+  }
+  function nextCourseName(level){
+    return {HSK2:'HSK 2',HSK3:'HSK 3',HSK4:'HSK 4',HSK5:'HSK 5'}[level] || level;
+  }
+  function inputSkillComment(kind, score, name, level, overallDecision='can'){
+    const ten=firstName(name), course=nextCourseName(level);
+    const strongList=taskText(kind,'strong');
+    const weakList=taskText(kind,'weak');
+    const labelMap={listen:'Kỹ năng Nghe',read:'Kỹ năng Đọc',write:'Kỹ năng Viết'};
+    const intro={
+      listen: score.ratio>=0.85 ? `${ten} nghe khá ổn, bắt được ý chính và xử lý được phần lớn thông tin trong bài.` : score.ratio>=0.62 ? `${ten} nghe được nội dung cơ bản, nhưng cần ổn định hơn khi bài có thông tin nhiễu hoặc tốc độ nhanh.` : `${ten} cần ôn lại nền nghe trước khi theo bài mới, nhất là bắt từ khóa và giữ mạch nghe.`,
+      read: score.ratio>=0.85 ? `${ten} đọc khá tốt, nhận ra được từ vựng, mẫu câu và thông tin chính trong văn bản.` : score.ratio>=0.62 ? `${ten} đã có nền đọc cơ bản, nhưng cần củng cố vốn từ và cách đọc theo cụm nghĩa.` : `${ten} cần ôn lại nền đọc trước khi theo bài mới, nhất là câu dài, từ mới và câu hỏi cần đối chiếu thông tin.`,
+      write: score.ratio>=0.85 ? `${ten} viết tương đối chắc, biết sắp xếp câu và diễn đạt ý bằng tiếng Trung.` : score.ratio>=0.62 ? `${ten} viết được các cấu trúc cơ bản, nhưng cần đều hơn ở trật tự câu, chọn từ và triển khai ý.` : `${ten} cần ôn lại nền viết trước khi theo bài mới, nhất là trật tự câu, chọn từ và diễn đạt ý rõ ràng.`
+    }[kind];
+    const strongText = strongList.length ? `Phần làm tốt là ${joinNatural(strongList)}.` : '';
+    const weakText = weakList.length ? `Phần cần rèn thêm là ${joinNatural(weakList)}.` : '';
+    let fit='';
+    if(overallDecision==='delay') fit=`Với kết quả hiện tại, phần này nên được ôn lại trước khi vào ${course}.`;
+    else if(overallDecision==='caution') fit=`Khi học ${course}, giáo viên nên lồng ôn nền cho phần này trong giai đoạn đầu.`;
+    else fit=`Khi học ${course}, phần chưa chắc có thể tiếp tục được rèn trong quá trình học.`;
+    const action={
+      listen:'Hướng rèn phù hợp là nghe lại theo transcript, gạch từ khóa rồi tăng dần độ dài bài nghe.',
+      read:'Hướng rèn phù hợp là đọc theo cụm nghĩa, gạch từ khóa và đối chiếu đáp án với văn bản.',
+      write:'Hướng rèn phù hợp là sửa từng câu, viết lại câu sai rồi tăng dần từ câu ngắn lên đoạn hoàn chỉnh.'
+    }[kind];
+    const text=[intro,strongText,weakText,fit,action].filter(Boolean).join(' ');
+    return {label:labelMap[kind], scoreText:score.text, text};
+  }
+  function inputDecision(sc){
+    const ratios=[sc.listen.ratio, sc.read.ratio, sc.write.ratio];
+    const low=ratios.filter(r=>r<0.55).length;
+    if(sc.totalRatio<0.45 || low>=2) return 'delay';
+    if(sc.totalRatio<0.62 || low===1) return 'caution';
+    return 'can';
+  }
+  function inputVerdictText(name, level, sc){
+    const ten=firstName(name), course=nextCourseName(level), d=inputDecision(sc);
+    if(d==='delay') return `Bạn ${ten} chưa nên học ${course} ngay theo nhịp chính khóa. Nền kiến thức của trình độ trước còn thiếu, nên ôn lại trong một giai đoạn ngắn rồi kiểm tra lại.`;
+    if(d==='caution') return `Bạn ${ten} có thể bắt đầu học ${course}, nhưng cần ôn nền trong giai đoạn đầu. Giáo viên nên theo sát kỹ năng thấp nhất để tránh lỗ hổng kéo dài sang bài mới.`;
+    return `Bạn ${ten} đủ năng lực để bắt đầu học ${course}. Nền kiến thức của trình độ trước tương đối ổn; khi học lên chỉ cần tiếp tục rèn kỹ năng còn thấp hơn để tiến bộ đều.`;
+  }
+  function generateInputConclusion(){
+    const name=$('inputName')?.value || 'học viên';
+    const level=$('inputLevel')?.value || 'HSK3';
+    const sc=updateInputTotal();
+    return inputVerdictText(name, level, sc);
+  }
+  function syncInputConclusion(force=false){
+    const el=$('inputConclusion');
+    if(!el) return;
+    const next=generateInputConclusion();
+    const previous=el.dataset.autoValue || '';
+    if(force || !el.value.trim() || el.value.trim()===previous.trim()){
+      el.value=next;
+      el.dataset.autoValue=next;
+    }
+  }
+  function getInputConclusionText(name, level, sc){
+    const el=$('inputConclusion');
+    if(el && el.value.trim()) return el.value.trim();
+    return inputVerdictText(name, level, sc);
+  }
+  function generateInputAdvice(){
+    const name=$('inputName')?.value || 'học viên';
+    const level=$('inputLevel')?.value || 'HSK3';
+    const sc=updateInputTotal();
+    const d=inputDecision(sc);
+    const comments=[inputSkillComment('listen',sc.listen,name,level,d), inputSkillComment('read',sc.read,name,level,d), inputSkillComment('write',sc.write,name,level,d)];
+    return `Nhận xét học viên: ${name}\nTổng điểm: ${sc.totalText}\n\n${comments.map(c=>`${c.label}: ${c.scoreText}: ${c.text}`).join('\n\n')}\n\nTổng kết: ${inputVerdictText(name,level,sc)}`;
+  }
+  function handleGenerateInput(){
+    if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice();
+    syncInputConclusion(true);
+    renderInputReport();
+  }
+  function renderInputRadar(sc){
+    const W=300,H=280,cx=150,cy=132,R=78;
+    const labels=['Nghe','Đọc','Viết'];
+    const vals=[sc.listen.ratio, sc.read.ratio, sc.write.ratio];
+    const texts=[sc.listen.text, sc.read.text, sc.write.text];
+    const pt=(ratio,i)=>{const a=(i*2*Math.PI/3)-Math.PI/2;return [cx+ratio*R*Math.cos(a),cy+ratio*R*Math.sin(a)];};
+    const grids=[.2,.4,.6,.8,1].map((v,gi)=>{const pts=[0,1,2].map(i=>pt(v,i));const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';return `<path d="${d}" fill="${gi===4?'rgba(200,0,26,.05)':'none'}" stroke="rgba(200,0,26,.15)" stroke-width="${gi===4?1.5:1}"/>`;}).join('');
+    const axes=[0,1,2].map(i=>{const [x,y]=pt(1,i);return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(200,0,26,.2)" stroke-width="1"/>`;}).join('');
+    const dpts=vals.map((v,i)=>pt(v,i));
+    const dp=dpts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';
+    const labs=labels.map((lb,i)=>{const [lx,ly]=pt(1.32,i);const anchor=lx<cx-4?'end':lx>cx+4?'start':'middle';return `<text x="${lx.toFixed(1)}" y="${(ly-7).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="700" fill="#82000b" font-family="Arial,sans-serif"><tspan x="${lx.toFixed(1)}" dy="0">${lb}</tspan><tspan x="${lx.toFixed(1)}" dy="15" font-size="12" font-weight="900" fill="#c8001a">${texts[i]}</tspan></text>`;}).join('');
+    return `<div class="chart-wrap"><div class="chart-title">Sơ đồ năng lực đầu vào</div><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="overflow:visible;display:block">${grids}${axes}<path d="${dp}" fill="rgba(200,0,26,.2)" stroke="#c8001a" stroke-width="2.5" stroke-linejoin="round"/>${dpts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5" fill="#c8001a" stroke="#fff" stroke-width="2"/>`).join('')}${labs}</svg></div>`;
+  }
+  function renderInputReport(){
+    if(!$('previewInput')) return;
+    const sc=updateInputTotal();
+    const rawName=$('inputName')?.value || '';
+    const name=escapeHtml(rawName);
+    const level=escapeHtml($('inputLevel')?.value || 'HSK3');
+    const d=inputDecision(sc);
+    const comments=[inputSkillComment('listen',sc.listen,rawName,level,d), inputSkillComment('read',sc.read,rawName,level,d), inputSkillComment('write',sc.write,rawName,level,d)];
+    if($('inputAbilityPreview')) $('inputAbilityPreview').innerHTML=renderInputRadar(sc);
+    const verdict=escapeHtml(getInputConclusionText(rawName||'học viên', level, sc));
+    $('previewInput').innerHTML=`<div id="inputReport" class="input-report-169">
+      <div class="report-header input-169-header">
+        <div class="report-logo-wrap">${reportLogo()}</div>
+        <div class="report-heading">
+          <div class="rh-main">ĐÁNH GIÁ BÀI KIỂM TRA ĐẦU VÀO</div>
+          <div class="rh-sub">${level}</div>
+        </div>
+      </div>
+      <div class="input-169-top">
+        <div class="input-169-score">
+          <div class="section-title">1. Thông tin và kết quả</div>
+          <div class="input-169-meta">
+            <div><b>Học viên</b>${name || '................................'}</div>
+            <div><b>Trình độ test</b>${level}</div>
+          </div>
+          <table>
+            <tr><th>Kỹ năng</th><th>Điểm</th></tr>
+            <tr><td class="skill-name">NGHE</td><td class="score">${sc.listen.text}</td></tr>
+            <tr><td class="skill-name">ĐỌC</td><td class="score">${sc.read.text}</td></tr>
+            <tr><td class="skill-name">VIẾT</td><td class="score">${sc.write.text}</td></tr>
+            <tr class="total-row"><td>TỔNG ĐIỂM</td><td>${sc.totalText}</td></tr>
+          </table>
+        </div>
+        <div class="input-169-chart-box">
+          <div class="section-title">2. Sơ đồ năng lực</div>
+          ${renderInputRadar(sc)}
+        </div>
+      </div>
+      <div class="section-title input-comment-section-title">3. Nhận xét theo kỹ năng</div>
+      <div class="input-comment-list">
+        ${comments.map(c=>`<div class="input-comment-item"><div class="input-comment-head"><span>${c.label}</span><span>${c.scoreText}</span></div>${c.text}</div>`).join('')}
+      </div>
+      <div class="section-title input-conclusion-section-title">4. Kết luận đầu vào</div>
+      <div class="input-verdict">${verdict}</div>
+      <div class="footer-contact input-footer">
+        <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
+        Fanpage: MXiao Chinese - Tiếng Trung MXiao | Email: info@mxiao.edu.vn
+      </div>
+    </div>`;
+  }
+  async function downloadJpg(id,name){
+    try{
+      const el=$(id);
+      if(!el){alert('Chưa có preview báo cáo.');return;}
+      const imgs=Array.from(el.querySelectorAll('img'));
+      const origSrcs=imgs.map(img=>img.src);
+      for(const img of imgs){
+        if(!img.complete||img.naturalWidth===0)continue;
+        try{const tc=document.createElement('canvas');tc.width=img.naturalWidth;tc.height=img.naturalHeight;tc.getContext('2d').drawImage(img,0,0);img.src=tc.toDataURL('image/png');}catch(e){img.style.visibility='hidden';}
+      }
+      const canvas=await html2canvas(el,{scale:2.5,useCORS:true,backgroundColor:'#fff',logging:false});
+      imgs.forEach((img,i)=>{img.src=origSrcs[i];img.style.visibility='';});
+      const a=document.createElement('a');
+      a.download=name;
+      a.href=canvas.toDataURL('image/jpeg',0.96);
+      a.click();
+    }catch(e){alert('Lỗi tạo JPG: '+e.message);console.error(e);}
+  }
+
+
+  /* V13 final input report logic - concise, mutually coherent remarks */
+  function compactJoin(arr, max=2){
+    const clean=(arr||[]).filter(Boolean).slice(0,max);
+    if(!clean.length) return '';
+    if(clean.length===1) return clean[0];
+    return clean.slice(0,-1).join('; ') + '; ' + clean[clean.length-1];
+  }
+  function inputSkillComment(kind, score, name, level, overallDecision='can'){
+    const ten=firstName(name), course=nextCourseName(level);
+    const strongList=taskText(kind,'strong');
+    const weakList=taskText(kind,'weak');
+    const labelMap={listen:'Kỹ năng Nghe',read:'Kỹ năng Đọc',write:'Kỹ năng Viết'};
+    const strong=compactJoin(strongList,2);
+    const weak=compactJoin(weakList,2);
+    const band=inputBand(score.ratio);
+    const introMap={
+      listen:{excellent:`${ten} nghe tốt, bắt được ý chính và xử lý thông tin khá chắc trong bài nghe.`,good:`${ten} có nền nghe ổn, hiểu được nội dung quen thuộc và nhận ra phần lớn từ khóa chính.`,medium:`${ten} nghe được nội dung cơ bản, nhưng cần ổn định hơn khi bài nghe dài hoặc có thông tin nhiễu.`,weak:`${ten} cần ôn lại nền nghe, nhất là bắt từ khóa, giữ mạch nghe và phân biệt thông tin chính.`,poor:`${ten} chưa đủ nền nghe để theo nhịp bài mới nếu không có giai đoạn ôn lại trước.`},
+      read:{excellent:`${ten} đọc tốt, nắm được từ vựng, mẫu câu và thông tin chính trong văn bản.`,good:`${ten} có nền đọc khá ổn, đọc hiểu được phần lớn nội dung thuộc phạm vi kiểm tra.`,medium:`${ten} đọc được ý cơ bản, nhưng cần củng cố vốn từ và cách xử lý câu dài.`,weak:`${ten} cần ôn lại nền đọc, nhất là từ vựng, cụm nghĩa và cách đối chiếu thông tin.`,poor:`${ten} chưa đủ nền đọc để theo nhịp bài mới nếu chưa ôn lại kiến thức trình độ trước.`},
+      write:{excellent:`${ten} viết khá chắc, biết sắp xếp câu và diễn đạt ý bằng tiếng Trung tương đối rõ.`,good:`${ten} có nền viết ổn, dùng được các cấu trúc quen thuộc và ít sai lỗi nghiêm trọng.`,medium:`${ten} viết được câu cơ bản, nhưng cần chắc hơn ở trật tự câu, chọn từ và triển khai ý.`,weak:`${ten} cần ôn lại nền viết, nhất là trật tự câu, chọn từ và cách diễn đạt ý rõ ràng.`,poor:`${ten} chưa đủ nền viết để theo nhịp bài mới nếu chưa có giai đoạn sửa lỗi cơ bản.`}
+    };
+    const intro=(introMap[kind]||{})[band] || '';
+    const strongText=strong?`Phần làm tốt là ${strong}.`:'';
+    const weakText=weak?`Phần cần rèn thêm là ${weak}.`:'';
+    let fit='';
+    if(overallDecision==='delay') fit=`Vì kết quả tổng thể còn thấp, kỹ năng này nên được ôn lại trước khi vào ${course}.`;
+    else if(overallDecision==='caution') fit=`Khi học ${course}, phần chưa chắc nên được ôn song song trong giai đoạn đầu.`;
+    else fit=`Khi học ${course}, phần chưa chắc có thể tiếp tục được rèn trong quá trình học.`;
+    const action={listen:'Nên nghe lại theo transcript, gạch từ khóa rồi tăng dần độ dài bài nghe.',read:'Nên đọc theo cụm nghĩa, gạch từ khóa và đối chiếu đáp án với văn bản.',write:'Nên sửa từng câu, viết lại câu sai rồi tăng dần từ câu ngắn lên đoạn hoàn chỉnh.'}[kind];
+    return {label:labelMap[kind], scoreText:score.text, text:[intro,strongText,weakText,fit,action].filter(Boolean).join(' ')};
+  }
+
+  function renderInputRadar(sc){
+    // Radar dùng trong báo cáo xuất ảnh. Bản này phóng lớn thật bằng cách giảm viewBox thừa,
+    // không chỉ tăng CSS nên khi export JPG sẽ nhìn lớn hơn rõ rệt.
+    const W=420,H=300,cx=210,cy=155,R=145;
+    const labels=['Nghe','Đọc','Viết'];
+    const vals=[sc.listen.ratio, sc.read.ratio, sc.write.ratio];
+    const texts=[sc.listen.text, sc.read.text, sc.write.text];
+    const pt=(ratio,i)=>{const a=(i*2*Math.PI/3)-Math.PI/2;return [cx+ratio*R*Math.cos(a),cy+ratio*R*Math.sin(a)];};
+    const grids=[.2,.4,.6,.8,1].map((v,gi)=>{const pts=[0,1,2].map(i=>pt(v,i));const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';return `<path d="${d}" fill="${gi===4?'rgba(200,0,26,.035)':'none'}" stroke="rgba(200,0,26,.20)" stroke-width="${gi===4?1.8:1.05}"/>`;}).join('');
+    const axes=[0,1,2].map(i=>{const [x,y]=pt(1,i);return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(200,0,26,.18)" stroke-width="1.05"/>`;}).join('');
+    const dpts=vals.map((v,i)=>pt(v,i));
+    const dp=dpts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';
+    const labelPos=[[cx,20,'middle'],[cx+R+16,cy+R*.62,'start'],[cx-R-16,cy+R*.62,'end']];
+    const labs=labels.map((lb,i)=>{const [lx,ly,anchor]=labelPos[i];return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" font-size="16" font-weight="800" fill="#82000b" font-family="Verdana,Arial,sans-serif"><tspan x="${lx}" dy="0">${lb}</tspan><tspan x="${lx}" dy="20" font-size="16" font-weight="900" fill="#c8001a">${texts[i]}</tspan></text>`;}).join('');
+    return `<div class="chart-wrap input-radar-wrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet" style="overflow:visible;display:block">${grids}${axes}<path d="${dp}" fill="rgba(200,0,26,.22)" stroke="#c8001a" stroke-width="3.4" stroke-linejoin="round"/>${dpts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6.5" fill="#c8001a" stroke="#fff" stroke-width="2.2"/>`).join('')}${labs}</svg></div>`;
+  }
+
+  function renderInputReport(){
+    if(!$('previewInput')) return;
+    const sc=updateInputTotal();
+    const rawName=$('inputName')?.value || '';
+    const name=escapeHtml(rawName);
+    const level=escapeHtml($('inputLevel')?.value || 'HSK3');
+    const d=inputDecision(sc);
+    const comments=[inputSkillComment('listen',sc.listen,rawName,level,d), inputSkillComment('read',sc.read,rawName,level,d), inputSkillComment('write',sc.write,rawName,level,d)];
+    if($('inputAbilityPreview')) $('inputAbilityPreview').innerHTML=renderInputRadar(sc);
+    const verdict=escapeHtml(getInputConclusionText(rawName||'học viên', level, sc));
+    $('previewInput').innerHTML=`<div id="inputReport" class="input-report-169">
+      <div class="report-header input-169-header">
+        <div class="report-logo-wrap">${reportLogo()}</div>
+        <div class="report-heading">
+          <div class="rh-main">ĐÁNH GIÁ BÀI KIỂM TRA ĐẦU VÀO</div>
+          <div class="rh-sub">${level}</div>
+        </div>
+      </div>
+      <div class="input-169-top">
+        <div class="input-169-score">
+          <div class="section-title">1. Thông tin và kết quả</div>
+          <div class="input-169-meta">
+            <div><b>Học viên</b>${name || '................................'}</div>
+            <div><b>Trình độ test</b>${level}</div>
+          </div>
+          <table>
+            <tr><th>Kỹ năng</th><th>Điểm</th></tr>
+            <tr><td class="skill-name">NGHE</td><td class="score">${sc.listen.text}</td></tr>
+            <tr><td class="skill-name">ĐỌC</td><td class="score">${sc.read.text}</td></tr>
+            <tr><td class="skill-name">VIẾT</td><td class="score">${sc.write.text}</td></tr>
+            <tr class="total-row"><td>TỔNG ĐIỂM</td><td>${sc.totalText}</td></tr>
+          </table>
+        </div>
+        <div class="input-169-chart-box">
+          <div class="section-title">2. Sơ đồ năng lực</div>
+          ${renderInputRadar(sc)}
+        </div>
+      </div>
+      <div class="section-title input-comment-section-title">3. Nhận xét theo kỹ năng</div>
+      <div class="input-comment-list">
+        ${comments.map(c=>`<div class="input-comment-item"><div class="input-comment-head"><span>${c.label}</span><span>${c.scoreText}</span></div>${escapeHtml(c.text)}</div>`).join('')}
+      </div>
+      <div class="section-title input-conclusion-section-title">4. Kết luận đầu vào</div>
+      <div class="input-verdict">${verdict}</div>
+      <div class="footer-contact input-footer">
+        <strong>MXIAO CHINESE - HỌC BÀI BẢN, DÙNG THỰC CHIẾN</strong>
+        Fanpage: MXiao Chinese - Tiếng Trung MXiao | Email: info@mxiao.edu.vn
+      </div>
+    </div>`;
+  }
+
+
+  /* ── Download PDF/PNG ── */
+  async function downloadCertificateImage() {
+    try {
+      const el=$('certificate');
+      if(!el){alert('Chưa có preview chứng nhận.');return;}
+      const canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:null,logging:false});
+      const a=document.createElement('a');
+      a.download=`MXiao_Cert_${($('certName').value||'HocVien').replaceAll(' ','_')}.png`;
+      a.href=canvas.toDataURL('image/png'); a.click();
+    } catch(e){alert('Lỗi tạo ảnh PNG: '+e.message);console.error(e);}
+  }
+
+  async function downloadPdf(id, name) {
+    try {
+      const el=$(id);
+      if(!el){alert('Chưa có preview báo cáo.');return;}
+      if(!window.jspdf||!window.jspdf.jsPDF){alert('Thư viện jsPDF chưa load xong, vui lòng thử lại sau vài giây.');return;}
+      // Đổi ảnh sang base64 trước để canvas không bị tainted
+      const imgs=Array.from(el.querySelectorAll('img'));
+      const origSrcs=imgs.map(img=>img.src);
+      for(const img of imgs){
+        if(!img.complete||img.naturalWidth===0)continue;
+        try{
+          const tc=document.createElement('canvas');
+          tc.width=img.naturalWidth;tc.height=img.naturalHeight;
+          tc.getContext('2d').drawImage(img,0,0);
+          img.src=tc.toDataURL('image/png');
+        }catch(e){img.style.visibility='hidden';}
+      }
+      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false});
+      // Khôi phục ảnh gốc
+      imgs.forEach((img,i)=>{img.src=origSrcs[i];img.style.visibility='';});
+      const {jsPDF}=window.jspdf;
+      const imgW=canvas.width, imgH=canvas.height;
+      const pageW=210, pageH=297;
+      const ratio=pageW/imgW;
+      const pageHeightPx=Math.floor(pageH/ratio);
+      const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      let yPx=0, pageIdx=0;
+      while(yPx<imgH){
+        const sliceH=Math.min(pageHeightPx,imgH-yPx);
+        const pc=document.createElement('canvas');pc.width=imgW;pc.height=sliceH;
+        pc.getContext('2d').drawImage(canvas,0,yPx,imgW,sliceH,0,0,imgW,sliceH);
+        if(pageIdx>0)pdf.addPage();
+        pdf.addImage(pc.toDataURL('image/jpeg',0.97),'JPEG',0,0,pageW,sliceH*ratio);
+        yPx+=sliceH;pageIdx++;
+      }
+      pdf.save(name);
+    } catch(e){alert('Lỗi tạo PDF: '+e.message);console.error(e);}
+  }
+
+  /* ── Boot listeners ── */
+  function boot() {
+    document.querySelectorAll('[data-tab]').forEach(btn=>{
+      btn.addEventListener('click', ()=>switchMode(btn.dataset.tab));
+    });
+
+    renderSliderGroups('stageSkillSliders',  'stage',        DATA.skills);
+    renderSliderGroups('stageSpiritSliders', 'stage_spirit', DATA.spirit);
+    renderSliderGroups('courseSkillSliders', 'course',       DATA.skills);
+
+    ['stageSkillSliders','stageSpiritSliders','courseSkillSliders'].forEach(cid=>{
+      $(cid).addEventListener('input', handleSliderInput);
+    });
+
+    const liveIds = [
+      'certType','certName','certDob','certClass','certCourse','certStart','certEnd','certIssue',
+      'stageName','stageTeacher','stageClass','stageCourse','stageLevel','stageExam','stageSpeakingPass',
+      'attendNeed','attendReal','homeworkNeed','homeworkReal','stageAdvice',
+      'courseName','courseTeacher','courseClass','courseDob',
+      'examListen','examRead','examWrite','examSpeak',
+      'score1','score2','score3','courseAdvice','astrologyAdvice', 'showAstrology', 'showPassText',
+      'inputName','inputLevel','inputListen','inputRead','inputWrite','inputAdvice','inputConclusion'
+    ];
+    liveIds.forEach(id=>{
+      const el=$(id); if(!el) return;
+      el.addEventListener('input', renderAll);
+      el.addEventListener('change', renderAll);
+    });
+
+    ['inputName','inputLevel','inputListen','inputRead','inputWrite'].forEach(id=>{
+      const el=$(id); if(!el) return;
+      el.addEventListener('input',()=>{ syncInputConclusion(false); renderInputReport(); });
+      el.addEventListener('change',()=>{ syncInputConclusion(false); renderInputReport(); });
+    });
+
+    $('courseCourse').addEventListener('change', () => { updateCourseUI(); });
+
+    $('btnDownloadCert').addEventListener('click', downloadCertificateImage);
+    $('btnAutoStage').addEventListener('click', handleGenerateStage);
+    $('btnDownloadStage').addEventListener('click', ()=>downloadPdf('stageReport','danh-gia-theo-chang.pdf'));
+    $('btnAutoCourse').addEventListener('click', handleGenerateCourse);
+    $('btnAutoAstro').addEventListener('click', handleGenerateAstro);
+    $('btnDownloadCourse').addEventListener('click', ()=>downloadPdf('courseReport','danh-gia-ca-khoa.pdf'));
+    if($('btnAutoInput')) $('btnAutoInput').addEventListener('click', handleGenerateInput);
+    if($('btnDownloadInput')) $('btnDownloadInput').addEventListener('click', ()=>downloadJpg('inputReport',`danh-gia-dau-vao_${($('inputName').value||'hoc-vien').replaceAll(' ','_')}.jpg`));
+
+    updateCourseUI();
+    if(typeof renderInputTaskOptions==='function') renderInputTaskOptions();
+    const inputLevelEl=$('inputLevel');
+    if(inputLevelEl) inputLevelEl.addEventListener('change',()=>{ renderInputTaskOptions(); if($('inputAdvice')) $('inputAdvice').value=generateInputAdvice(); syncInputConclusion(false); renderAll(); });
+    if($('inputAdvice') && !$('inputAdvice').value) $('inputAdvice').value=generateInputAdvice();
+    syncInputConclusion(false);
+    renderAll();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+</script>
+</body>
+</html>
