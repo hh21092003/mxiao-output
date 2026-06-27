@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MXiao File Tool - Final V16</title>
+  <title>MXiao File Tool - Final V18</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -812,6 +812,10 @@
     .export-root .pdf-section .section-title:first-child{margin-top:0!important;}
     .export-root .pdf-paragraph{white-space:normal!important;text-align:justify!important;margin:0 0 10px!important;font-size:14px!important;line-height:1.7!important;}
     .export-root .pdf-soft-split{break-inside:avoid!important;page-break-inside:avoid!important;}
+    .export-root .advice, .export-root .astro-block{display:block!important;visibility:visible!important;color:#251f21!important;white-space:normal!important;overflow:visible!important;}
+    .export-root .pdf-paragraph{display:block!important;visibility:visible!important;color:#251f21!important;}
+    .export-root .report-export-page table{break-inside:auto!important;page-break-inside:auto!important;}
+    .export-root .report-export-page tr{break-inside:avoid!important;page-break-inside:avoid!important;}
 
 </style>
 </head>
@@ -2540,6 +2544,26 @@
     return true;
   }
 
+
+  function splitTextToExportParagraphs(text){
+    const clean=(text||'').replace(/\s+/g,' ').trim();
+    if(!clean) return [];
+    const sentences=clean.split(/(?<=[.!?。！？])\s+/g).map(x=>x.trim()).filter(Boolean);
+    if(sentences.length<=1) return [clean];
+    const chunks=[];
+    let buf='';
+    sentences.forEach(sentence=>{
+      if((buf+' '+sentence).trim().length>520 && buf){
+        chunks.push(buf.trim());
+        buf=sentence;
+      }else{
+        buf=(buf+' '+sentence).trim();
+      }
+    });
+    if(buf) chunks.push(buf.trim());
+    return chunks;
+  }
+
   function splitOversizedBlock(block, addBlock){
     const children=Array.from(block.children);
     let title=null;
@@ -2555,19 +2579,42 @@
       if(carryTitle){part.appendChild(carryTitle);carryTitle=null;}
       const child=children[i].cloneNode(true);
       const paras=child.querySelectorAll?Array.from(child.querySelectorAll('.pdf-paragraph')):[];
-      if(paras.length>1){
+      if(paras.length>=1){
         const shell=child.cloneNode(false);
         let first=true;
         paras.forEach(para=>{
+          const chunks=splitTextToExportParagraphs(para.textContent||'');
+          chunks.forEach(chunk=>{
+            const mini=document.createElement('div');
+            mini.className='pdf-section';
+            if(first&&part.children.length){
+              Array.from(part.children).forEach(x=>mini.appendChild(x.cloneNode(true)));
+              first=false;
+            }
+            const paraShell=shell.cloneNode(false);
+            const p=document.createElement('div');
+            p.className='pdf-paragraph';
+            p.textContent=chunk;
+            paraShell.appendChild(p);
+            mini.appendChild(paraShell);
+            addBlock(mini,true);
+          });
+        });
+      }else if(child.tagName==='TABLE' && child.rows && child.rows.length>3){
+        const headRows=Array.from(child.rows).filter((r,idx)=>idx===0 || r.querySelector('th'));
+        const bodyRows=Array.from(child.rows).filter((r,idx)=>idx!==0 && !r.querySelector('th'));
+        let first=true;
+        bodyRows.forEach(row=>{
           const mini=document.createElement('div');
           mini.className='pdf-section';
           if(first&&part.children.length){
             Array.from(part.children).forEach(x=>mini.appendChild(x.cloneNode(true)));
             first=false;
           }
-          const paraShell=shell.cloneNode(false);
-          paraShell.appendChild(para.cloneNode(true));
-          mini.appendChild(paraShell);
+          const table=child.cloneNode(false);
+          headRows.forEach(hr=>table.appendChild(hr.cloneNode(true)));
+          table.appendChild(row.cloneNode(true));
+          mini.appendChild(table);
           addBlock(mini,true);
         });
       }else{
@@ -2575,6 +2622,35 @@
         addBlock(part,true);
       }
     }
+  }
+
+
+  function syncReportBeforeExport(id){
+    if(id==='stageReport'){
+      renderStageReport();
+      return $('stageReport');
+    }
+    if(id==='courseReport'){
+      renderCourseReport();
+      return $('courseReport');
+    }
+    return $(id);
+  }
+
+  function cloneNodeWithComputedContent(node){
+    const clone=node.cloneNode(true);
+    // Ensure generated/editable advice text is exported from the current textarea values, not from a stale DOM snapshot.
+    if(node.id==='stageReport'){
+      const advice=clone.querySelector('.advice');
+      if(advice) advice.textContent=$('stageAdvice').value||'';
+    }
+    if(node.id==='courseReport'){
+      const advice=clone.querySelector('.advice');
+      if(advice) advice.textContent=$('courseAdvice').value||'';
+      const astro=clone.querySelector('.astro-block');
+      if(astro && $('showAstrology') && $('showAstrology').checked) astro.textContent=$('astrologyAdvice').value||astro.textContent||'';
+    }
+    return clone;
   }
 
   function buildPaginatedReport(source){
@@ -2633,11 +2709,14 @@
   async function downloadPdf(id, name) {
     let root=null;
     try {
-      const el=$(id);
+      let el=syncReportBeforeExport(id);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      el=syncReportBeforeExport(id);
       if(!el){alert('Chưa có preview báo cáo.');return;}
       if(!window.jspdf||!window.jspdf.jsPDF){alert('Thư viện jsPDF chưa load xong, vui lòng thử lại sau vài giây.');return;}
       root=makeExportRoot();
-      const paginated=buildPaginatedReport(el);
+      const exportSource=cloneNodeWithComputedContent(el);
+      const paginated=buildPaginatedReport(exportSource);
       root.appendChild(paginated);
       await normalizeImagesIn(root);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
