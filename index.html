@@ -800,6 +800,19 @@
       line-height:1.2!important;
       margin-bottom:4px!important;
     }
+
+
+    /* V17 export fix: lock certificate ratio and real A4 pagination for study reports */
+    .export-root{position:fixed!important;left:-20000px!important;top:0!important;width:auto!important;height:auto!important;z-index:-1!important;background:#fff!important;pointer-events:none!important;opacity:1!important;}
+    .export-root .cert{transform:none!important;width:1123px!important;height:794px!important;min-width:1123px!important;max-width:1123px!important;min-height:794px!important;max-height:794px!important;margin:0!important;border-radius:0!important;box-shadow:none!important;}
+    .export-root .report{transform:none!important;width:794px!important;height:1123px!important;min-width:794px!important;max-width:794px!important;min-height:1123px!important;max-height:1123px!important;margin:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#fffefb!important;page-break-after:always!important;}
+    .export-root .report + .report{margin-top:0!important;}
+    .export-root .report-export-page{display:block!important;}
+    .export-root .pdf-section{break-inside:avoid!important;page-break-inside:avoid!important;}
+    .export-root .pdf-section .section-title:first-child{margin-top:0!important;}
+    .export-root .pdf-paragraph{white-space:normal!important;text-align:justify!important;margin:0 0 10px!important;font-size:14px!important;line-height:1.7!important;}
+    .export-root .pdf-soft-split{break-inside:avoid!important;page-break-inside:avoid!important;}
+
 </style>
 </head>
 <body>
@@ -2417,54 +2430,229 @@
 
 
   /* ── Download PDF/PNG ── */
+  function makeExportRoot(){
+    const old=document.getElementById('mxiaoExportRoot');
+    if(old) old.remove();
+    const root=document.createElement('div');
+    root.id='mxiaoExportRoot';
+    root.className='export-root';
+    document.body.appendChild(root);
+    return root;
+  }
+
+  async function normalizeImagesIn(root){
+    const imgs=Array.from(root.querySelectorAll('img'));
+    for(const img of imgs){
+      try{
+        if(!img.complete) await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;setTimeout(resolve,800);});
+        if(!img.naturalWidth||!img.naturalHeight) continue;
+        const tc=document.createElement('canvas');
+        tc.width=img.naturalWidth;
+        tc.height=img.naturalHeight;
+        tc.getContext('2d').drawImage(img,0,0);
+        img.src=tc.toDataURL('image/png');
+      }catch(e){
+        img.style.visibility='hidden';
+      }
+    }
+  }
+
+  function reportChildrenAsBlocks(source){
+    const raw=Array.from(source.children);
+    const blocks=[];
+    let section=null;
+    raw.forEach(node=>{
+      const isTopMatter=node.classList&&(
+        node.classList.contains('report-header')||
+        node.classList.contains('meta-row')||
+        node.classList.contains('meta-divider')
+      );
+      const isSectionTitle=node.classList&&node.classList.contains('section-title');
+      if(isTopMatter){
+        if(section){blocks.push(section);section=null;}
+        const b=document.createElement('div');
+        b.className='pdf-section pdf-soft-split';
+        b.appendChild(node.cloneNode(true));
+        blocks.push(b);
+        return;
+      }
+      if(isSectionTitle){
+        if(section) blocks.push(section);
+        section=document.createElement('div');
+        section.className='pdf-section';
+        section.appendChild(node.cloneNode(true));
+        return;
+      }
+      if(!section){
+        section=document.createElement('div');
+        section.className='pdf-section';
+      }
+      section.appendChild(node.cloneNode(true));
+    });
+    if(section) blocks.push(section);
+    return blocks.map(expandLongTextBlocks);
+  }
+
+  function expandLongTextBlocks(block){
+    const longSelectors='.advice, .astro-block';
+    block.querySelectorAll(longSelectors).forEach(el=>{
+      const html=el.innerHTML||'';
+      const tmp=document.createElement('div');
+      tmp.innerHTML=html.replace(/<br\s*\/?>/gi,'\n');
+      const text=(tmp.textContent||'').replace(/ /g,' ').trim();
+      if(!text) return;
+      const parts=text.split(/\n\s*\n|(?<=[.!?。！？])\s+(?=[A-ZÀ-ỴĐ])/g).map(x=>x.trim()).filter(Boolean);
+      if(parts.length<=1) return;
+      const wrapper=document.createElement('div');
+      wrapper.className=el.className;
+      parts.forEach(part=>{
+        const p=document.createElement('div');
+        p.className='pdf-paragraph';
+        p.textContent=part;
+        wrapper.appendChild(p);
+      });
+      el.replaceWith(wrapper);
+    });
+    return block;
+  }
+
+  function createReportExportPage(){
+    const page=document.createElement('div');
+    page.className='report report-export-page';
+    page.style.width='794px';
+    page.style.height='1123px';
+    page.style.minHeight='1123px';
+    page.style.maxHeight='1123px';
+    page.style.overflow='hidden';
+    return page;
+  }
+
+  function isOverflowing(page){
+    return page.scrollHeight>page.clientHeight+2;
+  }
+
+  function appendMeasured(page, node){
+    page.appendChild(node);
+    if(isOverflowing(page)){
+      page.removeChild(node);
+      return false;
+    }
+    return true;
+  }
+
+  function splitOversizedBlock(block, addBlock){
+    const children=Array.from(block.children);
+    let title=null;
+    let startIndex=0;
+    if(children[0]&&children[0].classList&&children[0].classList.contains('section-title')){
+      title=children[0].cloneNode(true);
+      startIndex=1;
+    }
+    let carryTitle=title;
+    for(let i=startIndex;i<children.length;i++){
+      const part=document.createElement('div');
+      part.className='pdf-section';
+      if(carryTitle){part.appendChild(carryTitle);carryTitle=null;}
+      const child=children[i].cloneNode(true);
+      const paras=child.querySelectorAll?Array.from(child.querySelectorAll('.pdf-paragraph')):[];
+      if(paras.length>1){
+        const shell=child.cloneNode(false);
+        let first=true;
+        paras.forEach(para=>{
+          const mini=document.createElement('div');
+          mini.className='pdf-section';
+          if(first&&part.children.length){
+            Array.from(part.children).forEach(x=>mini.appendChild(x.cloneNode(true)));
+            first=false;
+          }
+          const paraShell=shell.cloneNode(false);
+          paraShell.appendChild(para.cloneNode(true));
+          mini.appendChild(paraShell);
+          addBlock(mini,true);
+        });
+      }else{
+        part.appendChild(child);
+        addBlock(part,true);
+      }
+    }
+  }
+
+  function buildPaginatedReport(source){
+    const wrapper=document.createElement('div');
+    const pages=[];
+    let page=createReportExportPage();
+    wrapper.appendChild(page);
+    pages.push(page);
+    const newPage=()=>{
+      page=createReportExportPage();
+      wrapper.appendChild(page);
+      pages.push(page);
+    };
+    const addBlock=(block, alreadySplit=false)=>{
+      const candidate=block.cloneNode(true);
+      if(appendMeasured(page,candidate)) return;
+      if(page.children.length>0) newPage();
+      const secondTry=block.cloneNode(true);
+      if(appendMeasured(page,secondTry)) return;
+      if(alreadySplit){
+        page.appendChild(secondTry);
+        return;
+      }
+      splitOversizedBlock(block, addBlock);
+    };
+    reportChildrenAsBlocks(source).forEach(block=>addBlock(block));
+    pages.forEach(p=>{ if(!p.children.length) p.remove(); });
+    return wrapper;
+  }
+
   async function downloadCertificateImage() {
     try {
       const el=$('certificate');
       if(!el){alert('Chưa có preview chứng nhận.');return;}
-      const canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:null,logging:false});
+      const root=makeExportRoot();
+      const clone=el.cloneNode(true);
+      clone.style.transform='none';
+      clone.style.width='1123px';
+      clone.style.height='794px';
+      clone.style.minWidth='1123px';
+      clone.style.maxWidth='1123px';
+      clone.style.minHeight='794px';
+      clone.style.maxHeight='794px';
+      root.appendChild(clone);
+      await normalizeImagesIn(root);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const canvas=await html2canvas(clone,{scale:3,useCORS:true,backgroundColor:null,logging:false,width:1123,height:794,windowWidth:1123,windowHeight:794,scrollX:0,scrollY:0});
       const a=document.createElement('a');
       a.download=`MXiao_Cert_${($('certName').value||'HocVien').replaceAll(' ','_')}.png`;
-      a.href=canvas.toDataURL('image/png'); a.click();
+      a.href=canvas.toDataURL('image/png');
+      a.click();
+      root.remove();
     } catch(e){alert('Lỗi tạo ảnh PNG: '+e.message);console.error(e);}
   }
 
   async function downloadPdf(id, name) {
+    let root=null;
     try {
       const el=$(id);
       if(!el){alert('Chưa có preview báo cáo.');return;}
       if(!window.jspdf||!window.jspdf.jsPDF){alert('Thư viện jsPDF chưa load xong, vui lòng thử lại sau vài giây.');return;}
-      // Đổi ảnh sang base64 trước để canvas không bị tainted
-      const imgs=Array.from(el.querySelectorAll('img'));
-      const origSrcs=imgs.map(img=>img.src);
-      for(const img of imgs){
-        if(!img.complete||img.naturalWidth===0)continue;
-        try{
-          const tc=document.createElement('canvas');
-          tc.width=img.naturalWidth;tc.height=img.naturalHeight;
-          tc.getContext('2d').drawImage(img,0,0);
-          img.src=tc.toDataURL('image/png');
-        }catch(e){img.style.visibility='hidden';}
-      }
-      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false});
-      // Khôi phục ảnh gốc
-      imgs.forEach((img,i)=>{img.src=origSrcs[i];img.style.visibility='';});
+      root=makeExportRoot();
+      const paginated=buildPaginatedReport(el);
+      root.appendChild(paginated);
+      await normalizeImagesIn(root);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       const {jsPDF}=window.jspdf;
-      const imgW=canvas.width, imgH=canvas.height;
-      const pageW=210, pageH=297;
-      const ratio=pageW/imgW;
-      const pageHeightPx=Math.floor(pageH/ratio);
       const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-      let yPx=0, pageIdx=0;
-      while(yPx<imgH){
-        const sliceH=Math.min(pageHeightPx,imgH-yPx);
-        const pc=document.createElement('canvas');pc.width=imgW;pc.height=sliceH;
-        pc.getContext('2d').drawImage(canvas,0,yPx,imgW,sliceH,0,0,imgW,sliceH);
-        if(pageIdx>0)pdf.addPage();
-        pdf.addImage(pc.toDataURL('image/jpeg',0.97),'JPEG',0,0,pageW,sliceH*ratio);
-        yPx+=sliceH;pageIdx++;
+      const pages=Array.from(root.querySelectorAll('.report-export-page'));
+      if(!pages.length){alert('Không có nội dung để xuất PDF.');return;}
+      for(let i=0;i<pages.length;i++){
+        const canvas=await html2canvas(pages[i],{scale:2,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123,scrollX:0,scrollY:0});
+        if(i>0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,210,297);
       }
       pdf.save(name);
     } catch(e){alert('Lỗi tạo PDF: '+e.message);console.error(e);}
+    finally{ if(root) root.remove(); }
   }
 
   /* ── Boot listeners ── */
