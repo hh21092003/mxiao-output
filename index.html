@@ -2653,8 +2653,9 @@
     return clone;
   }
 
-  function buildPaginatedReport(source){
+  function buildPaginatedReport(source, mountRoot){
     const wrapper=document.createElement('div');
+    if(mountRoot) mountRoot.appendChild(wrapper);
     const pages=[];
     let page=createReportExportPage();
     wrapper.appendChild(page);
@@ -2716,8 +2717,7 @@
       if(!window.jspdf||!window.jspdf.jsPDF){alert('Thư viện jsPDF chưa load xong, vui lòng thử lại sau vài giây.');return;}
       root=makeExportRoot();
       const exportSource=cloneNodeWithComputedContent(el);
-      const paginated=buildPaginatedReport(exportSource);
-      root.appendChild(paginated);
+      const paginated=buildPaginatedReport(exportSource, root);
       await normalizeImagesIn(root);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       const {jsPDF}=window.jspdf;
