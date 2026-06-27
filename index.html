@@ -2444,6 +2444,83 @@
     return root;
   }
 
+
+  function createReportExportPage(){
+    const page=document.createElement('div');
+    page.className='report report-export-page';
+    return page;
+  }
+
+  function appendMeasured(page, block){
+    if(!page || !block) return false;
+    page.appendChild(block);
+    // Measure only after the page is already mounted inside the hidden export root.
+    // clientHeight is the fixed A4 page height; scrollHeight tells whether content overflowed.
+    const fits=(page.scrollHeight <= page.clientHeight + 2);
+    if(!fits && block.parentNode===page) page.removeChild(block);
+    return fits;
+  }
+
+  function splitTextForOverflow(text, limit=320){
+    const raw=(text||'').replace(/\s+/g,' ').trim();
+    if(!raw) return [];
+    const sentences=raw.split(/(?<=[.!?。！？])\s+/g).map(x=>x.trim()).filter(Boolean);
+    const parts=[];
+    const units=sentences.length>1 ? sentences : raw.match(new RegExp('.{1,'+limit+'}','g')) || [raw];
+    let buf='';
+    units.forEach(unit=>{
+      if(buf && (buf+' '+unit).length>limit){parts.push(buf.trim());buf=unit;}
+      else buf=(buf+' '+unit).trim();
+    });
+    if(buf) parts.push(buf.trim());
+    return parts;
+  }
+
+  function splitOversizedBlock(block, addBlock){
+    // Fallback for a block that is taller than an A4 page. Do not throw or stop export.
+    const first=block.firstElementChild;
+    const hasTitle=first && first.classList && first.classList.contains('section-title');
+    const title=hasTitle ? first.cloneNode(true) : null;
+    const textNode=block.querySelector('.pdf-paragraph,.advice,.astro-block') || null;
+
+    if(textNode){
+      const text=textFromHtmlNode(textNode);
+      const parts=splitTextForOverflow(text, 300);
+      if(parts.length){
+        parts.forEach((part,idx)=>{
+          const b=document.createElement('div');
+          b.className='pdf-section pdf-flow-block pdf-soft-split';
+          if(idx===0 && title) b.appendChild(title.cloneNode(true));
+          const wrap=document.createElement('div');
+          wrap.className=textNode.className || 'advice';
+          const para=document.createElement('div');
+          para.className='pdf-paragraph';
+          para.textContent=part;
+          wrap.appendChild(para);
+          b.appendChild(wrap);
+          addBlock(b,true);
+        });
+        return;
+      }
+    }
+
+    const children=Array.from(block.children);
+    if(children.length>1){
+      children.forEach((child,idx)=>{
+        if(idx===0 && hasTitle) return;
+        const b=document.createElement('div');
+        b.className='pdf-section pdf-flow-block pdf-soft-split';
+        if(idx===1 && title) b.appendChild(title.cloneNode(true));
+        b.appendChild(child.cloneNode(true));
+        addBlock(b,true);
+      });
+      return;
+    }
+
+    // Last resort: append as-is to avoid losing content.
+    addBlock(block,true);
+  }
+
   async function normalizeImagesIn(root){
     const imgs=Array.from(root.querySelectorAll('img'));
     for(const img of imgs){
