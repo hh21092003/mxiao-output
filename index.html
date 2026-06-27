@@ -2461,170 +2461,128 @@
     }
   }
 
-  function reportChildrenAsBlocks(source){
-    const raw=Array.from(source.children);
-    const blocks=[];
-    let section=null;
-    raw.forEach(node=>{
-      const isTopMatter=node.classList&&(
-        node.classList.contains('report-header')||
-        node.classList.contains('meta-row')||
-        node.classList.contains('meta-divider')
-      );
-      const isSectionTitle=node.classList&&node.classList.contains('section-title');
-      if(isTopMatter){
-        if(section){blocks.push(section);section=null;}
-        const b=document.createElement('div');
-        b.className='pdf-section pdf-soft-split';
-        b.appendChild(node.cloneNode(true));
-        blocks.push(b);
-        return;
-      }
-      if(isSectionTitle){
-        if(section) blocks.push(section);
-        section=document.createElement('div');
-        section.className='pdf-section';
-        section.appendChild(node.cloneNode(true));
-        return;
-      }
-      if(!section){
-        section=document.createElement('div');
-        section.className='pdf-section';
-      }
-      section.appendChild(node.cloneNode(true));
-    });
-    if(section) blocks.push(section);
-    return blocks.map(expandLongTextBlocks);
+  function cloneDirectBlock(node, extraClass=''){
+    const b=document.createElement('div');
+    b.className=('pdf-section pdf-flow-block '+extraClass).trim();
+    b.appendChild(node.cloneNode(true));
+    return b;
   }
 
-  function expandLongTextBlocks(block){
-    const longSelectors='.advice, .astro-block';
-    block.querySelectorAll(longSelectors).forEach(el=>{
-      const html=el.innerHTML||'';
-      const tmp=document.createElement('div');
-      tmp.innerHTML=html.replace(/<br\s*\/?>/gi,'\n');
-      const text=(tmp.textContent||'').replace(/ /g,' ').trim();
-      if(!text) return;
-      const parts=text.split(/\n\s*\n|(?<=[.!?。！？])\s+(?=[A-ZÀ-ỴĐ])/g).map(x=>x.trim()).filter(Boolean);
-      if(parts.length<=1) return;
-      const wrapper=document.createElement('div');
-      wrapper.className=el.className;
-      parts.forEach(part=>{
-        const p=document.createElement('div');
-        p.className='pdf-paragraph';
-        p.textContent=part;
-        wrapper.appendChild(p);
+  function textFromHtmlNode(node){
+    const tmp=document.createElement('div');
+    tmp.innerHTML=(node.innerHTML||'').replace(/<br\s*\/?>/gi,'\n');
+    return (tmp.textContent||'').replace(/\u00a0/g,' ').trim();
+  }
+
+  function splitReportText(text){
+    const raw=(text||'').replace(/\r/g,'').trim();
+    if(!raw) return [];
+    const base=raw.split(/\n\s*\n|\n+/g).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+    const out=[];
+    base.forEach(part=>{
+      if(part.length<=520){out.push(part);return;}
+      const sentences=part.split(/(?<=[.!?。！？])\s+/g).map(x=>x.trim()).filter(Boolean);
+      if(sentences.length<=1){
+        for(let i=0;i<part.length;i+=460) out.push(part.slice(i,i+460).trim());
+        return;
+      }
+      let buf='';
+      sentences.forEach(sentence=>{
+        if(buf && (buf+' '+sentence).length>520){out.push(buf.trim());buf=sentence;}
+        else buf=(buf+' '+sentence).trim();
       });
-      el.replaceWith(wrapper);
+      if(buf) out.push(buf.trim());
     });
-    return block;
+    return out;
   }
 
-  function createReportExportPage(){
-    const page=document.createElement('div');
-    page.className='report report-export-page';
-    page.style.width='794px';
-    page.style.height='1123px';
-    page.style.minHeight='1123px';
-    page.style.maxHeight='1123px';
-    page.style.overflow='hidden';
-    return page;
-  }
-
-  function isOverflowing(page){
-    return page.scrollHeight>page.clientHeight+2;
-  }
-
-  function appendMeasured(page, node){
-    page.appendChild(node);
-    if(isOverflowing(page)){
-      page.removeChild(node);
-      return false;
+  function makeTextFlowBlocks(node, pendingTitle=null){
+    const blocks=[];
+    const className=node.className||'advice';
+    const parts=splitReportText(textFromHtmlNode(node));
+    if(!parts.length){
+      const b=document.createElement('div');
+      b.className='pdf-section pdf-flow-block';
+      if(pendingTitle) b.appendChild(pendingTitle.cloneNode(true));
+      b.appendChild(node.cloneNode(true));
+      return [b];
     }
-    return true;
-  }
-
-
-  function splitTextToExportParagraphs(text){
-    const clean=(text||'').replace(/\s+/g,' ').trim();
-    if(!clean) return [];
-    const sentences=clean.split(/(?<=[.!?。！？])\s+/g).map(x=>x.trim()).filter(Boolean);
-    if(sentences.length<=1) return [clean];
-    const chunks=[];
-    let buf='';
-    sentences.forEach(sentence=>{
-      if((buf+' '+sentence).trim().length>520 && buf){
-        chunks.push(buf.trim());
-        buf=sentence;
-      }else{
-        buf=(buf+' '+sentence).trim();
-      }
+    parts.forEach((part,idx)=>{
+      const b=document.createElement('div');
+      b.className='pdf-section pdf-flow-block';
+      if(idx===0 && pendingTitle) b.appendChild(pendingTitle.cloneNode(true));
+      const wrap=document.createElement('div');
+      wrap.className=className;
+      const para=document.createElement('div');
+      para.className='pdf-paragraph';
+      para.textContent=part;
+      wrap.appendChild(para);
+      b.appendChild(wrap);
+      blocks.push(b);
     });
-    if(buf) chunks.push(buf.trim());
-    return chunks;
+    return blocks;
   }
 
-  function splitOversizedBlock(block, addBlock){
-    const children=Array.from(block.children);
-    let title=null;
-    let startIndex=0;
-    if(children[0]&&children[0].classList&&children[0].classList.contains('section-title')){
-      title=children[0].cloneNode(true);
-      startIndex=1;
-    }
-    let carryTitle=title;
-    for(let i=startIndex;i<children.length;i++){
-      const part=document.createElement('div');
-      part.className='pdf-section';
-      if(carryTitle){part.appendChild(carryTitle);carryTitle=null;}
-      const child=children[i].cloneNode(true);
-      const paras=child.querySelectorAll?Array.from(child.querySelectorAll('.pdf-paragraph')):[];
-      if(paras.length>=1){
-        const shell=child.cloneNode(false);
-        let first=true;
-        paras.forEach(para=>{
-          const chunks=splitTextToExportParagraphs(para.textContent||'');
-          chunks.forEach(chunk=>{
-            const mini=document.createElement('div');
-            mini.className='pdf-section';
-            if(first&&part.children.length){
-              Array.from(part.children).forEach(x=>mini.appendChild(x.cloneNode(true)));
-              first=false;
-            }
-            const paraShell=shell.cloneNode(false);
-            const p=document.createElement('div');
-            p.className='pdf-paragraph';
-            p.textContent=chunk;
-            paraShell.appendChild(p);
-            mini.appendChild(paraShell);
-            addBlock(mini,true);
-          });
-        });
-      }else if(child.tagName==='TABLE' && child.rows && child.rows.length>3){
-        const headRows=Array.from(child.rows).filter((r,idx)=>idx===0 || r.querySelector('th'));
-        const bodyRows=Array.from(child.rows).filter((r,idx)=>idx!==0 && !r.querySelector('th'));
-        let first=true;
-        bodyRows.forEach(row=>{
-          const mini=document.createElement('div');
-          mini.className='pdf-section';
-          if(first&&part.children.length){
-            Array.from(part.children).forEach(x=>mini.appendChild(x.cloneNode(true)));
-            first=false;
-          }
-          const table=child.cloneNode(false);
-          headRows.forEach(hr=>table.appendChild(hr.cloneNode(true)));
-          table.appendChild(row.cloneNode(true));
-          mini.appendChild(table);
-          addBlock(mini,true);
-        });
-      }else{
-        part.appendChild(child);
-        addBlock(part,true);
+  function makeSectionTitleBlock(titleNode){
+    const b=document.createElement('div');
+    b.className='pdf-section pdf-flow-block pdf-title-only';
+    b.appendChild(titleNode.cloneNode(true));
+    return b;
+  }
+
+  function reportChildrenAsBlocks(source){
+    const nodes=Array.from(source.children);
+    const blocks=[];
+    const top=document.createElement('div');
+    top.className='pdf-section pdf-flow-block pdf-topmatter';
+    let pendingTitle=null;
+    const flushTop=()=>{
+      if(top.children.length){blocks.push(top.cloneNode(true)); top.innerHTML='';}
+    };
+    nodes.forEach(node=>{
+      const cls=node.classList;
+      const isTopMatter=cls&&(cls.contains('report-header')||cls.contains('meta-row')||cls.contains('meta-divider'));
+      const isSectionTitle=cls&&cls.contains('section-title');
+      if(isTopMatter && !pendingTitle && !blocks.length){
+        top.appendChild(node.cloneNode(true));
+        return;
       }
-    }
+      flushTop();
+      if(isSectionTitle){
+        if(pendingTitle) blocks.push(makeSectionTitleBlock(pendingTitle));
+        pendingTitle=node.cloneNode(true);
+        return;
+      }
+      if(cls&&(cls.contains('advice')||cls.contains('astro-block'))){
+        makeTextFlowBlocks(node,pendingTitle).forEach(b=>blocks.push(b));
+        pendingTitle=null;
+        return;
+      }
+      if(node.tagName==='P' || node.classList?.contains('footer-contact')){
+        const textBlocks= node.tagName==='P' ? makeTextFlowBlocks(node,pendingTitle) : null;
+        if(textBlocks){ textBlocks.forEach(b=>blocks.push(b)); }
+        else{
+          const b=document.createElement('div');
+          b.className='pdf-section pdf-flow-block';
+          if(pendingTitle) b.appendChild(pendingTitle.cloneNode(true));
+          b.appendChild(node.cloneNode(true));
+          blocks.push(b);
+        }
+        pendingTitle=null;
+        return;
+      }
+      const b=document.createElement('div');
+      b.className='pdf-section pdf-flow-block';
+      if(pendingTitle){ b.appendChild(pendingTitle.cloneNode(true)); pendingTitle=null; }
+      b.appendChild(node.cloneNode(true));
+      blocks.push(b);
+    });
+    flushTop();
+    if(pendingTitle) blocks.push(makeSectionTitleBlock(pendingTitle));
+    return blocks;
   }
 
-
+  function expandLongTextBlocks(block){ return block; }
   function syncReportBeforeExport(id){
     if(id==='stageReport'){
       renderStageReport();
